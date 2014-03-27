@@ -17,7 +17,7 @@ public class LiterakiClient {
 				
 				/*TableAndUserWindow t = new TableAndUserWindow();
 				t.setVisible(true);
-				t.setAutoRequestFocus(true); */
+				t.setAutoRequestFocus(true);*/
 			}
 		});
 	}
