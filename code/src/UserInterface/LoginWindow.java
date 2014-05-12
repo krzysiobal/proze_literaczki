@@ -18,16 +18,15 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
-import Main.ApplicationLogic;
-
 /**
  * Okno wyświetlane tuż po uruchomieniu aplikacji (z polem na nazwę użytkownika
  * i hasło)
  */
 @SuppressWarnings("serial")
-public class MainWindow extends JFrame {
+public class LoginWindow extends JFrame {
+
 	/** Logika aplikacji */
-	private ApplicationLogic appLogic;
+	private AppLogic appLogic;
 
 	/** Pole tekstowe przechowywujące nazwę użytkownika. */
 	private JTextField usernameTextField;
@@ -69,7 +68,8 @@ public class MainWindow extends JFrame {
 	private JCheckBox checkBox;
 
 	/** Konstruktor głównego okna logowania/rejestracji aplikacji. */
-	public MainWindow() {
+	public LoginWindow(AppLogic appLogic) {
+		this.appLogic = appLogic;
 		mp = new MainPanel();
 		mp.setLayout(new BoxLayout(mp, BoxLayout.Y_AXIS));
 		mp.add(Box.createRigidArea(new Dimension(0, 7)));
@@ -96,7 +96,11 @@ public class MainWindow extends JFrame {
 			textPanel = new JPanel();
 			buttonPanel = new JPanel();
 			usernameTextField = new JTextField();
+			usernameTextField.setText(appLogic.getConfigFile().getValue(
+					"UserData", "Name"));
 			passwordTextField = new JPasswordField();
+			passwordTextField.setText(appLogic.getConfigFile().getValue(
+					"UserData", "Password"));
 			repeatPasswordTextField = new JPasswordField();
 			btnLogin = new JButton("Log in");
 			btnExit = new JButton("Exit");
@@ -188,7 +192,8 @@ public class MainWindow extends JFrame {
 		/** Funkcja uruchamiająca okno z tabelami stołów oraz użytkowników. */
 		public void showTablesAndUsers() {
 			dispose();
-			TableAndUserWindow tableAndUserWindow = new TableAndUserWindow();
+			TableAndUserWindow tableAndUserWindow = new TableAndUserWindow(
+					appLogic);
 			tableAndUserWindow.setVisible(true);
 			tableAndUserWindow.setAutoRequestFocus(true);
 		}

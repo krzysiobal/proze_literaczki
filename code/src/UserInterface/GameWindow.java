@@ -6,11 +6,9 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.util.Random;
 import java.util.Vector;
 
 import javax.swing.BoxLayout;
@@ -22,6 +20,8 @@ import javax.swing.JPanel;
 /** Klasa wyświetaląca okno ze stołu z trwającą grą */
 @SuppressWarnings("serial")
 public class GameWindow extends JFrame {
+	AppLogic appLogic;
+
 	/** Główny panel okna z planszą gry */
 	private JPanel mainPanel;
 
@@ -65,53 +65,34 @@ public class GameWindow extends JFrame {
 	private UserField secondPlayerPoints;
 
 	/** Zmienna przechowywująca polski alfabet. Z niej będa losowane literki. */
-	private String alphabet = "AĄBCĆDEĘFGHIJKLMNŃOPQRSŚTUVWXYŹŻ";
+	private String alphabet = "AĄBCĆDEĘFGHIJKLŁMNŃOUPRSŚTUWYZŹŻ";
 
-	/** Zmienna przechowywująca nazwe pliku konfiguracyjnego. */
-	private String fileName = "e:\\Pulpit\\proze-literaczki\\repo\\code\\config.txt";
-
-	/**
-	 * Zmienna, do której zczytywane są kolory pól na planszy z pliku
-	 * konfiguracyjnego.
-	 */
+	/** Zmienna określająca kolory pól na planszy */
 	private String[][] net = new String[15][15];
-	/*
-	 * {"r","w","b","w","w","g","w","r","w","g","w","w","b","w","r"},
-	 * {"w","w","w","w","g","w","r","w","r","w","g","w","w","w","w"},
-	 * {"b","w","w","g","w","b","w","y","w","b","w","g","w","w","b"},
-	 * {"w","w","g","w","b","w","y","w","y","w","b","w","g","w","w"},
-	 * {"w","g","w","b","w","y","w","w","w","y","w","b","w","g","w"},
-	 * {"g","w","b","w","y","w","w","b","w","w","y","w","b","w","g"},
-	 * {"w","r","w","y","w","w","b","w","b","w","w","y","w","r","w"},
-	 * {"r","w","y","w","w","b","w","w","w","b","w","w","y","w","r"},
-	 * {"w","r","w","y","w","w","b","w","b","w","w","y","w","r","w"},
-	 * {"g","w","b","w","y","w","w","b","w","w","y","w","b","w","g"},
-	 * {"w","g","w","b","w","y","w","w","w","y","w","b","w","g","w"},
-	 * {"w","w","g","w","b","w","y","w","y","w","b","w","g","w","w"},
-	 * {"b","w","w","g","w","b","w","y","w","b","w","g","w","w","b"},
-	 * {"w","w","w","w","g","w","r","w","r","w","g","w","w","w","w"},
-	 * {"r","w","b","w","w","g","w","r","w","g","w","w","b","w","r"},
-	 */
 
-	/** Tablica 2D przechowywująca współrzędne pól z podwojoną ilością punktów */
-	private int[][] fields2x = { { 0, 2 }, { 0, 12 }, { 2, 0 }, { 2, 14 },
-			{ 12, 0 }, { 12, 14 }, { 14, 2 }, { 14, 12 } };
+	private int[][] muls = new int[15][15];
 
-	/** Tablica 2D przechowywująca współrzędne pól z potrojoną ilością punktów */
-	private int[][] fields3x = { { 2, 5 }, { 2, 9 }, { 3, 4 }, { 3, 10 },
-			{ 4, 3 }, { 4, 11 }, { 5, 2 }, { 5, 12 }, { 9, 2 }, { 12, 9 },
-			{ 9, 12 }, { 10, 3 }, { 10, 11 }, { 11, 4 }, { 11, 10 }, { 12, 5 },
-			{ 12, 9 } };
+	// /** Tablica 2D przechowywująca współrzędne pól z podwojoną ilością
+	// punktów */
+	// private int[][] fields2x = { { 0, 2 }, { 0, 12 }, { 2, 0 }, { 2, 14 },
+	// { 12, 0 }, { 12, 14 }, { 14, 2 }, { 14, 12 } };
+	//
+	// /** Tablica 2D przechowywująca współrzędne pól z potrojoną ilością
+	// punktów */
+	// private int[][] fields3x = { { 2, 5 }, { 2, 9 }, { 3, 4 }, { 3, 10 },
+	// { 4, 3 }, { 4, 11 }, { 5, 2 }, { 5, 12 }, { 9, 2 }, { 12, 9 },
+	// { 9, 12 }, { 10, 3 }, { 10, 11 }, { 11, 4 }, { 11, 10 }, { 12, 5 },
+	// { 12, 9 } };
 
 	/** Konstruktor okna, wczytuje plik konfiguracyjny */
-	public GameWindow() {
-		loadConfig(fileName);
+	public GameWindow(AppLogic appLogic) {
+		this.appLogic = appLogic;
+		loadConfig();
 		init();
 		setTitle("Literaki");
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setFocusable(true);
-
 	}
 
 	/** Funkcja inicjująca interfejs */
@@ -172,81 +153,119 @@ public class GameWindow extends JFrame {
 	}
 
 	/**
+	 * Wczytuje plik konfiguracyjny o podanej nazwie, wypełnia zmienną net
+	 */
+	private void loadConfig() {
+		Vector<String> lines = new Vector<String>();
+
+		for (int i = 1; i <= 15; i++)
+			lines.add(appLogic.getConfigFile().getValue("Boards",
+					"colours_line" + new Integer(i).toString()));
+
+		initNet(lines);
+
+		for (int i = 1; i <= 15; i++)
+			for (int j = 1; j <= 15; j++)
+				muls[i - 1][j - 1] = Integer.parseInt(appLogic
+						.getConfigFile()
+						.getValue("Boards",
+								"bonuses_line" + new Integer(i).toString())
+						.substring(j - 1, j));
+
+	}
+
+	/**
 	 * Wypełnia plansze polami o odpowiednim kolorze na podstawie wartości
 	 * przechowywanej w zmiennej net
 	 */
 	public void loadFields() {
-		String points = "";
+		String fieldLabelColor;
+		Color fieldBackColor;
 		for (int i = 0; i < 15; i++)
 			for (int j = 0; j < 15; j++) {
 				String col = net[i][j];
-				if (check2x(i, j) == true)
-					points = "2x";
-				else if (check3x(i, j) == true)
-					points = "3x";
-				switch (col) {
-				case "w":
-					fieldsPanel.add(new Field(Color.WHITE, points));
-					break;
-				case "g":
-					fieldsPanel
-							.add(new Field(new Color(0, 255, 0, 95), points));
-					break;
-				case "r":
-					fieldsPanel
-							.add(new Field(new Color(255, 0, 0, 95), points));
-					break;
-				case "b":
-					fieldsPanel
-							.add(new Field(new Color(0, 0, 255, 95), points));
-					break;
-				case "y":
-					fieldsPanel.add(new Field(new Color(255, 255, 0, 95),
-							points));
-					break;
-				}
-				points = "";
+				if (muls[i][j] == 2)
+					fieldLabelColor = "2x";
+				else if (muls[i][j] == 3)
+					fieldLabelColor = "3x";
+				else
+					fieldLabelColor = "";
+
+				if (col.equals("w"))
+					fieldBackColor = Color.WHITE;
+				else if (col.equals("g"))
+					fieldBackColor = new Color(0, 255, 0, 95);
+				else if (col.equals("r"))
+					fieldBackColor = new Color(255, 0, 0, 95);
+				else if (col.equals("b"))
+					fieldBackColor = new Color(0, 0, 255, 95);
+				else if (col.equals("y"))
+					fieldBackColor = new Color(255, 255, 0, 95);
+				else
+					fieldBackColor = Color.WHITE;
+
+				final Field f = new Field(fieldBackColor, fieldLabelColor);
+
+				// reagowanie na klikniecie pola, na razie nie dziala
+				f.addMouseListener(new MouseListener() {
+
+					@Override
+					public void mouseReleased(MouseEvent arg0) {
+						// TODO Auto-generated method stub
+
+					}
+
+					@Override
+					public void mousePressed(MouseEvent arg0) {
+						Random r = new Random();
+						int i = r.nextInt(alphabet.length());
+						f.setText("A"); // alphabet.substring(i, i + 1));
+
+					}
+
+					@Override
+					public void mouseExited(MouseEvent arg0) {
+						// TODO Auto-generated method stub
+
+					}
+
+					@Override
+					public void mouseEntered(MouseEvent arg0) {
+						// TODO Auto-generated method stub
+
+					}
+
+					@Override
+					public void mouseClicked(MouseEvent arg0) {
+
+					}
+				});
+				fieldsPanel.add(f);
 			}
 	}
 
-	/** sprawdza czy pole powinno mieć podwójną punktację */
-	private boolean check2x(int i, int j) {
-		for (int n = 0; n < 8; n++)
-			if ((i == fields2x[n][0] && j == fields2x[n][1])
-					|| (i == fields2x[n][0] && j == fields2x[n][1]))
-				return true;
-		return false;
-	}
+	// /** sprawdza czy pole powinno mieć podwójną punktację */
+	// private boolean check2x(int i, int j) {
+	// for (int n = 0; n < 8; n++)
+	// if ((i == fields2x[n][0] && j == fields2x[n][1])
+	// || (i == fields2x[n][0] && j == fields2x[n][1]))
+	// return true;
+	// return false;
+	// }
 
-	/** sprawdza czy pole powinno mieć potrójną punktację */
-	private boolean check3x(int i, int j) {
-		for (int n = 0; n < 15; n++)
-			if ((i == fields3x[n][0] && j == fields3x[n][1])
-					|| (i == fields3x[n][0] && j == fields3x[n][1]))
-				return true;
-		return false;
-	}
+	// /** sprawdza czy pole powinno mieć potrójną punktację */
+	// private boolean check3x(int i, int j) {
+	// for (int n = 0; n < 15; n++)
+	// if ((i == fields3x[n][0] && j == fields3x[n][1])
+	// || (i == fields3x[n][0] && j == fields3x[n][1]))
+	// return true;
+	// return false;
+	// }
 
 	/** Zwraca pseudolosową litere alfabetu */
 	private char getRandomLetter() {
 		int randomNum = (int) (Math.random() * 32);
 		return alphabet.charAt(randomNum);
-	}
-
-	/** Wczytuje plik konfiguracyjny o podanej nazwie, wypełnia zmienną net */
-	private void loadConfig(String fileName) {
-		Vector<String> lines = new Vector<String>();
-		String line;
-		try {
-			InputStream is = new FileInputStream(fileName);
-			BufferedReader br = new BufferedReader(new InputStreamReader(is));
-			while ((line = br.readLine()) != null)
-				lines.add(line);
-			br.close();
-			initNet(lines);
-		} catch (IOException e) {
-
-		}
 	}
 
 	/** Wypełnia tablice net */

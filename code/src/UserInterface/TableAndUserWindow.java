@@ -15,12 +15,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
-import Main.ApplicationLogic;
-
 /** Klasa wyświetlająca okno z listą stołów i użytkowników */
 @SuppressWarnings("serial")
 public class TableAndUserWindow extends JFrame {
-	private ApplicationLogic appLogic;
+	private AppLogic appLogic;
 	private JPanel mainPanel;
 	private JPanel listsPanel;
 	private JTable tablesList;
@@ -33,7 +31,8 @@ public class TableAndUserWindow extends JFrame {
 	private StatusBar statusBar;
 
 	/** Konstruktor klasy TableAndUserWindow */
-	public TableAndUserWindow() {
+	public TableAndUserWindow(AppLogic appLogic) {
+		this.appLogic = appLogic;
 		init();
 		setTitle("Literaki - Tables & Users");
 		setLocationRelativeTo(null);
@@ -109,7 +108,7 @@ public class TableAndUserWindow extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				GameWindow win = new GameWindow();
+				GameWindow win = new GameWindow(appLogic);
 				win.setVisible(true);
 			}
 		});

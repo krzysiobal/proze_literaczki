@@ -1,18 +1,21 @@
-package Main;
+package UserInterface;
 
 import java.sql.Connection;
 
 import Containers.Room;
+import Utilities.ConfigFile;
 
-/** Główna logikaa aplikacji */
-public class ApplicationLogic {
+/** Logika aplikacji */
+public class AppLogic {
+	/** zmienna przechowywująca nazwę użytkownika */
+	private String username;
+
+	/** zmienna przechowywująca hasło użytkownika */
+	private String password;
+
 	private Room room;
 	private Connection connection;
-
-	/** Konstruktor klasy */
-	public ApplicationLogic() {
-
-	}
+	private ConfigFile configFile = new ConfigFile();
 
 	/** Zwraca pokój, do którego użytkownik jest połączony */
 	public Room getRoom() {
@@ -24,6 +27,11 @@ public class ApplicationLogic {
 		this.room = room;
 	}
 
+	/** zwraca konfigurację */
+	public ConfigFile getConfigFile() {
+		return configFile;
+	}
+
 	/** Zwraca połączenie z serwerem */
 	public Connection getConnection() {
 		return connection;
@@ -33,4 +41,5 @@ public class ApplicationLogic {
 	public void setConnection(Connection connection) {
 		this.connection = connection;
 	}
+
 }
