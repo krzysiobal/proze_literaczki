@@ -18,6 +18,9 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
+import Exceptions.RegisterUsernameExceptionConnectionProblem;
+import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
+
 /**
  * Okno wyświetlane tuż po uruchomieniu aplikacji (z polem na nazwę użytkownika
  * i hasło)
@@ -65,7 +68,7 @@ public class LoginWindow extends JFrame {
 	 * Przełącznik zmieniający wygląd okna pomiędzy widokami
 	 * logowanie/rejestracja.
 	 */
-	private JCheckBox checkBox;
+	private JCheckBox checkBoxRegisterUsername;
 
 	/** Konstruktor głównego okna logowania/rejestracji aplikacji. */
 	public LoginWindow(AppLogic appLogic) {
@@ -96,6 +99,8 @@ public class LoginWindow extends JFrame {
 			textPanel = new JPanel();
 			buttonPanel = new JPanel();
 			usernameTextField = new JTextField();
+			// TODO - maksymalna długość tekstu 13 znaków, tylko litery i cyfry
+
 			usernameTextField.setText(appLogic.getConfigFile().getValue(
 					"UserData", "Name"));
 			passwordTextField = new JPasswordField();
@@ -107,8 +112,8 @@ public class LoginWindow extends JFrame {
 			usernameLabel = new JLabel("Username: ");
 			passwordLabel = new JLabel("Password: ");
 			repeatPasswordLabel = new JLabel("Repeat password: ");
-			checkBox = new JCheckBox();
-			checkBox.setText("Registration");
+			checkBoxRegisterUsername = new JCheckBox();
+			checkBoxRegisterUsername.setText("Registration");
 			setupListeners();
 		}
 
@@ -130,23 +135,34 @@ public class LoginWindow extends JFrame {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					if (checkLogRegFormState()) {
-						if (checkBox.isSelected()) {
-							showMessageDialog("Registration successful.");
-							showTablesAndUsers();
+						if (checkBoxRegisterUsername.isSelected()) {
 
-						} else {
-							showMessageDialog("Logged in successfully.");
-							showTablesAndUsers();
+							if (!passwordTextField.getText().equals(
+									repeatPasswordTextField.getText())) {
+								showMessageDialog("Passwords do not match.");
+							} else
+								try {
+									appLogic.getConnection().registerUsername(
+											usernameTextField.getText(),
+											passwordTextField.getText());
+
+									// showMessageDialog("Logged in successfully.");
+									showTablesAndUsers();
+								} catch (RegisterUsernameExceptionConnectionProblem ex) {
+									showMessageDialog("Error during registration:\nconnection problem occured");
+								} catch (RegisterUsernameExceptionUserAlreadyExists ex) {
+									showMessageDialog("Error during registration:\nselected username already exists.\n\nPlease choose another username.");
+								}
 						}
 					}
 				}
 			});
 
-			checkBox.addActionListener(new ActionListener() {
+			checkBoxRegisterUsername.addActionListener(new ActionListener() {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					if (checkBox.isSelected()) {
+					if (checkBoxRegisterUsername.isSelected()) {
 						textPanel.add(repeatPasswordLabel, 4);
 						textPanel.add(repeatPasswordTextField, 5);
 						btnLogin.setText("Register");
@@ -179,7 +195,7 @@ public class LoginWindow extends JFrame {
 
 			buttonPanel.add(btnLogin);
 			buttonPanel.add(btnExit);
-			buttonPanel.add(checkBox);
+			buttonPanel.add(checkBoxRegisterUsername);
 
 			pack();
 		}
@@ -217,7 +233,7 @@ public class LoginWindow extends JFrame {
 			} else
 				passwordLabel.setForeground(Color.BLACK);
 
-			if (checkBox.isSelected())
+			if (checkBoxRegisterUsername.isSelected())
 				if (repeatPasswordTextField.getText().equals("")) {
 					repeatPasswordLabel.setForeground(Color.RED);
 					result = false;

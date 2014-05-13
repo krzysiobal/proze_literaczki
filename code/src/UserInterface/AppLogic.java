@@ -1,8 +1,7 @@
 package UserInterface;
 
-import java.sql.Connection;
-
 import Containers.Room;
+import Main.Connection;
 import Utilities.ConfigFile;
 
 /** Logika aplikacji */
@@ -14,7 +13,7 @@ public class AppLogic {
 	private String password;
 
 	private Room room;
-	private Connection connection;
+	private Connection connection = new Connection();
 	private ConfigFile configFile = new ConfigFile();
 
 	/** Zwraca pokój, do którego użytkownik jest połączony */
