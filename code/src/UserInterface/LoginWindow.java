@@ -1,5 +1,6 @@
 package UserInterface;
 
+//TODO - przeniesc rejestracje z wątku UI
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -18,6 +19,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
+import Exceptions.ConnectionFailException;
 import Exceptions.RegisterUsernameExceptionConnectionProblem;
 import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
 
@@ -146,13 +148,18 @@ public class LoginWindow extends JFrame {
 											usernameTextField.getText(),
 											passwordTextField.getText());
 
+									appLogic.getConnection().connect("ad");
+
 									// showMessageDialog("Logged in successfully.");
 									showTablesAndUsers();
 								} catch (RegisterUsernameExceptionConnectionProblem ex) {
 									showMessageDialog("Error during registration:\nconnection problem occured");
 								} catch (RegisterUsernameExceptionUserAlreadyExists ex) {
 									showMessageDialog("Error during registration:\nselected username already exists.\n\nPlease choose another username.");
+								} catch (ConnectionFailException ex) {
+									showMessageDialog("Error during connecting.");
 								}
+
 						}
 					}
 				}

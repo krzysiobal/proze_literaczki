@@ -1,20 +1,34 @@
 package Main;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.Socket;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import Containers.Packet;
 import Exceptions.ConnectionFailException;
 import Exceptions.RegisterUsernameExceptionConnectionProblem;
 import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
 import Listeners.UserEnterRoomListener;
 import Listeners.UserLeaveRoomListener;
+import UserInterface.AppLogic;
 
 /** Klasa odpowiedzialna za połączenie z serwerem */
 public class Connection {
+	AppLogic appLogic;
+	Socket clientSocket;
+	DataOutputStream outToServer;
+	DataInputStream inFromServer;
+
 	String ksession;
+
+	public Connection(AppLogic appLogic) {
+		this.appLogic = appLogic;
+	}
 
 	public void registerUsername(String username, String password)
 			throws RegisterUsernameExceptionConnectionProblem,
@@ -87,19 +101,149 @@ public class Connection {
 		throw new RegisterUsernameExceptionUserAlreadyExists();
 	}
 
+	public void login(String username, String password, String roomName) {
+
+	}
+
 	/** Łączy się z serwerem za pomocą podanych danych uwierzytelniających */
-	public void connect(String username, String password, String roomName)
-			throws ConnectionFailException {
+	public void connect(String roomName) throws ConnectionFailException {
+		try {
+			clientSocket = new Socket(appLogic.getConfigFile().getValue(
+					"Server",
+
+					"Host"), Integer.parseInt(appLogic.getConfigFile()
+					.getValue("Server", "Port")));
+			outToServer = new DataOutputStream(clientSocket.getOutputStream());
+			inFromServer = new DataInputStream(clientSocket.getInputStream());
+
+			sendPacket(new int[] { 0x4276 },
+					new String[] { ksession.substring(0, 16),
+							new String(new byte[] { 0x70, 0x6c }),
+							new String(new byte[] { 0x6a }), new String(""),
+							new String("") });
+
+			new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					try {
+						while (true) {
+							Packet packet = receivePacket();
+							if (packet.getNumbers().length == 0)
+								System.out.println("Odebralem pakiet");
+							else
+								System.out.println("Odebralem pakiet o ID = "
+										+ packet.getNumbers()[0]);
+						}
+					} catch (IOException ex) {
+
+					}
+
+				}
+			}).run();
+
+		} catch (IOException ex) {
+			throw new ConnectionFailException();
+		}
 	}
 
 	/** Kończy połączenie z serwerem */
-	public void disconnect() {
-
+	public void disconnect() throws ConnectionFailException {
+		try {
+			clientSocket.close();
+		} catch (IOException ex) {
+			throw new ConnectionFailException();
+		}
 	}
 
 	/** Ustawia listener wywoływany w momencie gdy użytkownik opuszcza pokój */
 	public void setOnUserLeaveListener(UserLeaveRoomListener userLeaveListner) {
 
+	}
+
+	/** wysyla do serwera liczbe 32 bitowa zgodnie z protokołem */
+	private void sendInt32(int i) throws IOException {
+		outToServer.write(new byte[] { (byte) ((i >> 24) & 0xFF),
+				(byte) ((i >> 16) & 0xFF), (byte) ((i >> 8) & 0xFF),
+				(byte) ((i >> 0) & 0xFF) });
+	}
+
+	/** wysyła do serwera liczbe 16 bitowązgodnie z protokołem */
+	private void sendInt16(int i) throws IOException {
+		outToServer.write(new byte[] { (byte) ((i >> 8) & 0xFF),
+				(byte) ((i >> 0) & 0xFF) });
+	}
+
+	private int receiveInt32() throws IOException {
+		byte[] array = new byte[4];
+		inFromServer.read(array, 0, array.length);
+		return ((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16)
+				| ((array[2] & 0xFF) << 8) | ((array[3] & 0xFF) << 0);
+	}
+
+	private int receiveInt16() throws IOException {
+		byte[] array = new byte[2];
+		inFromServer.read(array, 0, array.length);
+		return ((array[0] & 0xFF) << 8) | (array[1] & 0xFF);
+	}
+
+	/** wysyla podana tablice numbers i strings zgodnie ze specyfikacja pakietu */
+	private void sendPacket(int[] numbers, String[] strings) throws IOException {
+		int len = 0;
+		len += 4 + 4;
+		len += numbers.length * 2;
+
+		for (String s : strings) {
+			byte[] array = s.getBytes("UTF8");
+			len += 2 + array.length + 1;
+		}
+
+		sendInt32(len);
+		sendInt16(numbers.length);
+		sendInt16(strings.length);
+
+		for (int n : numbers)
+			sendInt16(n);
+
+		for (String s : strings) {
+			byte[] array = s.getBytes("UTF8");
+
+			sendInt16(array.length);
+			outToServer.write(array);
+			outToServer.write(new byte[] { 0 });
+		}
+	}
+
+	private Packet receivePacket() throws IOException {
+		int numbers[];
+		String[] strings;
+
+		int len = receiveInt32();
+		System.out.println("LEN=" + len);
+
+		int numbersCount = receiveInt16();
+		int stringsCount = receiveInt16();
+
+		System.out.println("NC=" + numbersCount + ", SC = " + stringsCount);
+		numbers = new int[numbersCount];
+		strings = new String[stringsCount];
+
+		for (int i = 0; i < numbersCount; i++)
+			numbers[i] = receiveInt16();
+
+		for (int i = 0; i < stringsCount; i++) {
+			int stringLen = receiveInt16();
+			byte[] chars = new byte[stringLen];
+			inFromServer.read(chars, 0, stringLen);
+			inFromServer.read();
+
+			strings[i] = new String(chars, "UTF-8");
+		}
+
+		Packet p = new Packet();
+		p.setNumbers(numbers);
+		p.setStrings(strings);
+		return p;
 	}
 
 	/**

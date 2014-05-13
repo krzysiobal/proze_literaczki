@@ -13,8 +13,14 @@ public class AppLogic {
 	private String password;
 
 	private Room room;
-	private Connection connection = new Connection();
-	private ConfigFile configFile = new ConfigFile();
+	private Connection connection;
+	private ConfigFile configFile;
+
+	/** konstruktor klasy */
+	public AppLogic() {
+		connection = new Connection(this);
+		configFile = new ConfigFile();
+	}
 
 	/** Zwraca pokój, do którego użytkownik jest połączony */
 	public Room getRoom() {
