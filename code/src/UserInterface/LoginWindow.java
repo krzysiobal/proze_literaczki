@@ -20,8 +20,11 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 import Exceptions.ConnectionFailException;
+import Exceptions.LoginFailExceptionConnectionProblem;
+import Exceptions.LoginFailExceptionInvalidCredentials;
 import Exceptions.RegisterUsernameExceptionConnectionProblem;
 import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
+import Listeners.LoggedSuccessfullyListener;
 
 /**
  * Okno wyświetlane tuż po uruchomieniu aplikacji (z polem na nazwę użytkownika
@@ -138,7 +141,6 @@ public class LoginWindow extends JFrame {
 				public void actionPerformed(ActionEvent e) {
 					if (checkLogRegFormState()) {
 						if (checkBoxRegisterUsername.isSelected()) {
-
 							if (!passwordTextField.getText().equals(
 									repeatPasswordTextField.getText())) {
 								showMessageDialog("Passwords do not match.");
@@ -148,10 +150,17 @@ public class LoginWindow extends JFrame {
 											usernameTextField.getText(),
 											passwordTextField.getText());
 
+									appLogic.getConnection()
+											.addLoggedSuccessfullyListener(
+													new LoggedSuccessfullyListener() {
+														@Override
+														public void loggedSuccesfully() {
+															showTablesAndUsers();
+														}
+													});
+
 									appLogic.getConnection().connect("ad");
 
-									// showMessageDialog("Logged in successfully.");
-									showTablesAndUsers();
 								} catch (RegisterUsernameExceptionConnectionProblem ex) {
 									showMessageDialog("Error during registration:\nconnection problem occured");
 								} catch (RegisterUsernameExceptionUserAlreadyExists ex) {
@@ -159,6 +168,31 @@ public class LoginWindow extends JFrame {
 								} catch (ConnectionFailException ex) {
 									showMessageDialog("Error during connecting.");
 								}
+
+						} else { // logowanie
+							try {
+								appLogic.getConnection().login(
+										usernameTextField.getText(),
+										passwordTextField.getText());
+
+								appLogic.getConnection()
+										.addLoggedSuccessfullyListener(
+												new LoggedSuccessfullyListener() {
+													@Override
+													public void loggedSuccesfully() {
+														showTablesAndUsers();
+													}
+												});
+
+								appLogic.getConnection().connect("ad");
+
+							} catch (LoginFailExceptionConnectionProblem ex) {
+								showMessageDialog("Error during loggin in:\nconnection problem occured");
+							} catch (LoginFailExceptionInvalidCredentials ex) {
+								showMessageDialog("Error during loggin in:\ninvalid credentials");
+							} catch (ConnectionFailException ex) {
+								showMessageDialog("Error during connecting.");
+							}
 
 						}
 					}

@@ -3,6 +3,7 @@ package UserInterface;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
@@ -14,6 +15,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
+
+import Containers.User;
+import Listeners.UsersAtTableListListener;
 
 /** Klasa wyświetlająca okno z listą stołów i użytkowników */
 @SuppressWarnings("serial")
@@ -85,8 +89,8 @@ public class TableAndUserWindow extends JFrame {
 		mainPanel.add(tablesScrollPane);
 		mainPanel.add(usersScrollPane);
 
-		addTablesItem(512, 12, "John", "Mark");
-		addTablesItem(31, 5, "Steven", "asd");
+		// addTablesItem(512, 12, "John", "Mark");
+		// addTablesItem(31, 5, "Steven", "asd");
 
 		getContentPane().add(statusBar, java.awt.BorderLayout.SOUTH);
 		setJMenuBar(menuBar);
@@ -112,6 +116,20 @@ public class TableAndUserWindow extends JFrame {
 				win.setVisible(true);
 			}
 		});
+
+		appLogic.getConnection().addUsersAtTableListListener(
+				new UsersAtTableListListener() {
+
+					@Override
+					public void usersAtTableList(List<User> users) {
+
+						System.out.println("przyszło");
+
+						for (User u : users)
+							addUsersItem(u);
+
+					}
+				});
 	}
 
 	/** Dodaje nowy stół do tabeli */
@@ -119,6 +137,11 @@ public class TableAndUserWindow extends JFrame {
 			String secondPlayer) {
 		tablesListModel.addRow(new Object[] { "#" + tableNumber, time + " min",
 				firstPlayer, secondPlayer });
+	}
+
+	public void addUsersItem(User u) {
+		usersListModel.addRow(new Object[] { u.getUsername(),
+				u.getRankingPosition(), u.getTableAt() });
 	}
 }
 

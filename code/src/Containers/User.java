@@ -4,14 +4,16 @@ package Containers;
 public class User {
 	private String username;
 	private int rankingPosition;
-	private Table tableAt;
+	private int tableAt;
 	private String nationality;
 
 	/** Konstruktor klasy */
-	public User(String username, int rankingPosition, Table tableAt) {
+	public User(String username, int rankingPosition, int tableAt,
+			String nationality) {
 		this.username = username;
 		this.rankingPosition = rankingPosition;
 		this.tableAt = tableAt;
+		this.nationality = nationality;
 	}
 
 	/** Ustawia nazwe użytkownika */
@@ -28,12 +30,12 @@ public class User {
 	 * Zwraca stół, na którym przebywa użytkownik lub null, gdy przy żadnym
 	 * stole nie siedzi
 	 */
-	public Table getTableAt() {
+	public int getTableAt() {
 		return tableAt;
 	}
 
 	/** Ustawia stół, na którym przebywa użytkownik */
-	public void setTableAt(Table tableAt) {
+	public void setTableAt(int tableAt) {
 		this.tableAt = tableAt;
 	}
 

@@ -15,6 +15,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 /** Klasa wyświetaląca okno ze stołu z trwającą grą */
@@ -69,20 +70,7 @@ public class GameWindow extends JFrame {
 
 	/** Zmienna określająca kolory pól na planszy */
 	private String[][] net = new String[15][15];
-
 	private int[][] muls = new int[15][15];
-
-	// /** Tablica 2D przechowywująca współrzędne pól z podwojoną ilością
-	// punktów */
-	// private int[][] fields2x = { { 0, 2 }, { 0, 12 }, { 2, 0 }, { 2, 14 },
-	// { 12, 0 }, { 12, 14 }, { 14, 2 }, { 14, 12 } };
-	//
-	// /** Tablica 2D przechowywująca współrzędne pól z potrojoną ilością
-	// punktów */
-	// private int[][] fields3x = { { 2, 5 }, { 2, 9 }, { 3, 4 }, { 3, 10 },
-	// { 4, 3 }, { 4, 11 }, { 5, 2 }, { 5, 12 }, { 9, 2 }, { 12, 9 },
-	// { 9, 12 }, { 10, 3 }, { 10, 11 }, { 11, 4 }, { 11, 10 }, { 12, 5 },
-	// { 12, 9 } };
 
 	/** Konstruktor okna, wczytuje plik konfiguracyjny */
 	public GameWindow(AppLogic appLogic) {
@@ -217,9 +205,6 @@ public class GameWindow extends JFrame {
 
 					@Override
 					public void mousePressed(MouseEvent arg0) {
-						Random r = new Random();
-						int i = r.nextInt(alphabet.length());
-						f.setText("A"); // alphabet.substring(i, i + 1));
 
 					}
 
@@ -237,7 +222,10 @@ public class GameWindow extends JFrame {
 
 					@Override
 					public void mouseClicked(MouseEvent arg0) {
-
+						JOptionPane.showMessageDialog(null, "bla");
+						Random r = new Random();
+						int i = r.nextInt(alphabet.length());
+						f.setText("A"); // alphabet.substring(i, i + 1));
 					}
 				});
 				fieldsPanel.add(f);

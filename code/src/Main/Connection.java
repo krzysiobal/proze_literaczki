@@ -6,15 +6,21 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import Containers.Packet;
+import Containers.User;
 import Exceptions.ConnectionFailException;
+import Exceptions.LoginFailExceptionConnectionProblem;
+import Exceptions.LoginFailExceptionInvalidCredentials;
 import Exceptions.RegisterUsernameExceptionConnectionProblem;
 import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
+import Listeners.LoggedSuccessfullyListener;
 import Listeners.UserEnterRoomListener;
 import Listeners.UserLeaveRoomListener;
+import Listeners.UsersAtTableListListener;
 import UserInterface.AppLogic;
 
 /** Klasa odpowiedzialna za połączenie z serwerem */
@@ -25,6 +31,9 @@ public class Connection {
 	DataInputStream inFromServer;
 
 	String ksession;
+
+	List<UsersAtTableListListener> usersAtTableListListeners = new LinkedList<UsersAtTableListListener>();
+	List<LoggedSuccessfullyListener> loggedSuccefullyListeners = new LinkedList<LoggedSuccessfullyListener>();
 
 	public Connection(AppLogic appLogic) {
 		this.appLogic = appLogic;
@@ -78,22 +87,6 @@ public class Connection {
 						}
 				}
 
-			// for (String key : header.keySet())
-			// System.out.println(key + ": " + header.get(key));
-			// System.out.println();
-
-			// BufferedReader in = new BufferedReader(new InputStreamReader(
-			// con.getInputStream()));
-			// String inputLine;
-			// StringBuffer response = new StringBuffer();
-			//
-			// while ((inputLine = in.readLine()) != null) {
-			// response.append(inputLine);
-			// }
-			// in.close();
-			//
-			// // print result
-			// System.out.println(responseCode + "\n" + response.toString());
 		} catch (Exception ex) {
 			throw new RegisterUsernameExceptionConnectionProblem();
 		} finally {
@@ -101,8 +94,96 @@ public class Connection {
 		throw new RegisterUsernameExceptionUserAlreadyExists();
 	}
 
-	public void login(String username, String password, String roomName) {
+	public void login(String username, String password)
+			throws LoginFailExceptionInvalidCredentials,
+			LoginFailExceptionConnectionProblem {
+		try {
+			String url = "http://www.kurnik.pl/literaki/?l=1";
+			HttpURLConnection.setFollowRedirects(false);
+			URL obj = new URL(url);
+			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
+			// add request header
+			con.setRequestMethod("POST");
+
+			con.setRequestProperty("Host", "www.kurnik.pl");
+			con.setRequestProperty("User-Agent",
+					"Mozilla/5.0 (Windows NT 5.1; rv:22.0) Gecko/20100101 Firefox/22.0");
+			con.setRequestProperty("Accept",
+					"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+			con.setRequestProperty("Accept-Language", "pl,en-us;q=0.7,en;q=0.3");
+			con.setRequestProperty("Accept-Encoding", "gzip, deflate");
+			con.setRequestProperty("Referer", "http://www.kurnik.pl/literaki/");
+			con.setRequestProperty("Connection", "keep-alive");
+
+			String urlParameters = "cc=0&id=" + username + "&pw=" + password;
+
+			// Send post request
+			con.setDoOutput(true);
+			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+			wr.writeBytes(urlParameters);
+			wr.flush();
+			wr.close();
+
+			int responseCode = con.getResponseCode();
+			Map<String, List<String>> responseHeader = con.getHeaderFields();
+
+			for (String key : responseHeader.keySet()) {
+				if (key != null && key.equals("Set-Cookie")) {
+
+					String cookie = "";
+					for (String s : responseHeader.get(key))
+						cookie = cookie + s;
+
+					String[] cookies = cookie.split("; ");
+					for (String s : cookies)
+						if (s.startsWith("ksession=")) {
+							ksession = s.substring(9);
+							return;
+						}
+				}
+			}
+
+		} catch (Exception ex) {
+			throw new LoginFailExceptionConnectionProblem();
+		} finally {
+		}
+		throw new LoginFailExceptionInvalidCredentials();
+	}
+
+	private void interpretPacket(Packet packet) {
+
+		if (packet.getNumbers().length > 0) {
+			int packetId = packet.getNumbers()[0];
+
+			switch (packetId) {
+			case 18:
+				for (LoggedSuccessfullyListener l : loggedSuccefullyListeners)
+					l.loggedSuccesfully();
+				break;
+
+			case 27: { // receiving list of users in room
+				// JOptionPane.showMessageDialog(null, "pakiet 27");
+
+				List<User> users = new LinkedList<User>();
+
+				for (int i = 0; i < packet.getStrings().length; i++) {
+					String username = packet.getStrings()[i];
+					int rankingPosition = packet.getNumbers()[3 + (3 * i) + 2];
+					int tableNo = packet.getNumbers()[3 + (3 * i) + 1];
+					int nationality = packet.getNumbers()[3 + (3 * i) + 0];
+					User u = new User(username, rankingPosition, tableNo, null);
+					users.add(u);
+				}
+
+				for (UsersAtTableListListener l : usersAtTableListListeners)
+					l.usersAtTableList(users);
+				break;
+			}
+			default:
+				// JOptionPane.showMessageDialog(null, "pakiet inny");
+			}
+		}
 	}
 
 	/** Łączy się z serwerem za pomocą podanych danych uwierzytelniających */
@@ -129,18 +210,12 @@ public class Connection {
 					try {
 						while (true) {
 							Packet packet = receivePacket();
-							if (packet.getNumbers().length == 0)
-								System.out.println("Odebralem pakiet");
-							else
-								System.out.println("Odebralem pakiet o ID = "
-										+ packet.getNumbers()[0]);
+							interpretPacket(packet);
 						}
 					} catch (IOException ex) {
-
 					}
-
 				}
-			}).run();
+			}).start();
 
 		} catch (IOException ex) {
 			throw new ConnectionFailException();
@@ -219,12 +294,12 @@ public class Connection {
 		String[] strings;
 
 		int len = receiveInt32();
-		System.out.println("LEN=" + len);
+		// System.out.println("LEN=" + len);
 
 		int numbersCount = receiveInt16();
 		int stringsCount = receiveInt16();
 
-		System.out.println("NC=" + numbersCount + ", SC = " + stringsCount);
+		// System.out.println("NC=" + numbersCount + ", SC = " + stringsCount);
 		numbers = new int[numbersCount];
 		strings = new String[stringsCount];
 
@@ -243,6 +318,7 @@ public class Connection {
 		Packet p = new Packet();
 		p.setNumbers(numbers);
 		p.setStrings(strings);
+		System.out.println(p.toString());
 		return p;
 	}
 
@@ -253,5 +329,13 @@ public class Connection {
 	public void setOnUserEnterRoomListener(
 			UserEnterRoomListener userEnterRoomListner) {
 
+	}
+
+	public void addUsersAtTableListListener(UsersAtTableListListener l) {
+		usersAtTableListListeners.add(l);
+	}
+
+	public void addLoggedSuccessfullyListener(LoggedSuccessfullyListener l) {
+		loggedSuccefullyListeners.add(l);
 	}
 }
