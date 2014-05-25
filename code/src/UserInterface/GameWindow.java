@@ -15,7 +15,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 /** Klasa wyświetaląca okno ze stołu z trwającą grą */
@@ -132,10 +131,9 @@ public class GameWindow extends JFrame {
 		pack();
 
 		exitButton.addActionListener(new ActionListener() {
-
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				dispose();
+				GameWindow.this.dispose();
 			}
 		});
 	}
@@ -222,7 +220,6 @@ public class GameWindow extends JFrame {
 
 					@Override
 					public void mouseClicked(MouseEvent arg0) {
-						JOptionPane.showMessageDialog(null, "bla");
 						Random r = new Random();
 						int i = r.nextInt(alphabet.length());
 						f.setText("A"); // alphabet.substring(i, i + 1));

@@ -1,6 +1,6 @@
 package UserInterface;
 
-import Containers.Room;
+import Containers.GameRoomData;
 import Main.Connection;
 import Utilities.ConfigFile;
 
@@ -12,7 +12,7 @@ public class AppLogic {
 	/** zmienna przechowywująca hasło użytkownika */
 	private String password;
 
-	private Room room;
+	private GameRoomData gameRoomData;
 	private Connection connection;
 	private ConfigFile configFile;
 
@@ -20,16 +20,17 @@ public class AppLogic {
 	public AppLogic() {
 		connection = new Connection(this);
 		configFile = new ConfigFile();
+		gameRoomData = new GameRoomData();
 	}
 
 	/** Zwraca pokój, do którego użytkownik jest połączony */
-	public Room getRoom() {
-		return room;
+	public GameRoomData getGameRoomData() {
+		return gameRoomData;
 	}
 
 	/** Ustawia pokój, do którego użytkowink jest połączony */
-	public void setRoom(Room room) {
-		this.room = room;
+	public void setGameRoomData(GameRoomData gameRoomData) {
+		this.gameRoomData = gameRoomData;
 	}
 
 	/** zwraca konfigurację */
@@ -45,6 +46,22 @@ public class AppLogic {
 	/** Ustawia połączenie z serwerem */
 	public void setConnection(Connection connection) {
 		this.connection = connection;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
 	}
 
 }

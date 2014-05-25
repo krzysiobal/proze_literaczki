@@ -140,6 +140,9 @@ public class LoginWindow extends JFrame {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					if (checkLogRegFormState()) {
+						appLogic.setUsername(usernameTextField.getText());
+						appLogic.setPassword(passwordTextField.getText());
+
 						if (checkBoxRegisterUsername.isSelected()) {
 							if (!passwordTextField.getText().equals(
 									repeatPasswordTextField.getText())) {
@@ -150,14 +153,13 @@ public class LoginWindow extends JFrame {
 											usernameTextField.getText(),
 											passwordTextField.getText());
 
-									appLogic.getConnection()
-											.addLoggedSuccessfullyListener(
-													new LoggedSuccessfullyListener() {
-														@Override
-														public void loggedSuccesfully() {
-															showTablesAndUsers();
-														}
-													});
+									appLogic.getConnection().addListener(
+											new LoggedSuccessfullyListener() {
+												@Override
+												public void loggedSuccesfully() {
+													showTablesAndUsers();
+												}
+											});
 
 									appLogic.getConnection().connect("ad");
 
@@ -175,14 +177,13 @@ public class LoginWindow extends JFrame {
 										usernameTextField.getText(),
 										passwordTextField.getText());
 
-								appLogic.getConnection()
-										.addLoggedSuccessfullyListener(
-												new LoggedSuccessfullyListener() {
-													@Override
-													public void loggedSuccesfully() {
-														showTablesAndUsers();
-													}
-												});
+								appLogic.getConnection().addListener(
+										new LoggedSuccessfullyListener() {
+											@Override
+											public void loggedSuccesfully() {
+												showTablesAndUsers();
+											}
+										});
 
 								appLogic.getConnection().connect("ad");
 

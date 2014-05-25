@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
+import java.util.EventListener;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import Containers.Packet;
+import Containers.Room;
 import Containers.Table;
 import Containers.User;
 import Exceptions.ConnectionFailException;
@@ -19,9 +22,8 @@ import Exceptions.LoginFailExceptionInvalidCredentials;
 import Exceptions.RegisterUsernameExceptionConnectionProblem;
 import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
 import Listeners.LoggedSuccessfullyListener;
+import Listeners.RoomListListener;
 import Listeners.TablesInRoomListListener;
-import Listeners.UserEnterRoomListener;
-import Listeners.UserLeaveRoomListener;
 import Listeners.UsersInRoomListListener;
 import UserInterface.AppLogic;
 
@@ -34,9 +36,7 @@ public class Connection {
 
 	String ksession;
 
-	List<UsersInRoomListListener> usersInRoomListListeners = new LinkedList<UsersInRoomListListener>();
-	List<LoggedSuccessfullyListener> loggedSuccefullyListeners = new LinkedList<LoggedSuccessfullyListener>();
-	List<TablesInRoomListListener> tablesInRoomListListeners = new LinkedList<TablesInRoomListListener>();
+	CopyOnWriteArrayList<EventListener> listeners = new CopyOnWriteArrayList<EventListener>();
 
 	public Connection(AppLogic appLogic) {
 		this.appLogic = appLogic;
@@ -165,8 +165,9 @@ public class Connection {
 				break;
 
 			case 18:
-				for (LoggedSuccessfullyListener l : loggedSuccefullyListeners)
-					l.loggedSuccesfully();
+				for (EventListener l : listeners)
+					if (l instanceof LoggedSuccessfullyListener)
+						((LoggedSuccessfullyListener) l).loggedSuccesfully();
 				break;
 
 			case 27: { // receiving list of users in room
@@ -181,9 +182,42 @@ public class Connection {
 					users.add(u);
 				}
 
-				for (UsersInRoomListListener l : usersInRoomListListeners)
-					l.usersInRoomList(users);
+				for (EventListener l : listeners)
+					if (l instanceof UsersInRoomListListener)
+						((UsersInRoomListListener) l).usersInRoomList(users);
 				break;
+			}
+
+			case 32: { // receiving list of rooms
+				// PAKIET: numbers = 2, strings = 1
+				// 32, 6,
+				// #100... bocianowo (pełny)
+				// #200... boleszyn (pełny)
+				// #300... burszewo (pełny)
+				// #400... chojnik (pełny)
+				// #500... domkowo (pełny)
+				// #600... drogosze (pełny)
+				// #700... gieduty (177)
+				List<Room> rooms = new LinkedList<Room>();
+				for (String s : packet.getStrings()[0].split("\n")) {
+					int number = Integer
+							.parseInt(s.substring(1, s.indexOf(".")));
+					String name = s.substring(s.indexOf(" "),
+							s.indexOf("(") - 1);
+					Room r = new Room();
+					r.setName(name);
+					r.setNumber(number);
+					r.setDetails(s);
+					rooms.add(r);
+				}
+				int currentRoomIndex = packet.getNumbers()[1];
+
+				for (EventListener l : listeners)
+					if (l instanceof RoomListListener)
+						((RoomListListener) l).roomsList(rooms,
+								currentRoomIndex);
+				break;
+
 			}
 
 			case 71: { // receiving list of tables in room
@@ -209,8 +243,9 @@ public class Connection {
 					tables.add(t);
 				}
 
-				for (TablesInRoomListListener l : tablesInRoomListListeners)
-					l.tablesInRoomList(tables);
+				for (EventListener l : listeners)
+					if (l instanceof TablesInRoomListListener)
+						((TablesInRoomListListener) l).tablesInRoomList(tables);
 				break;
 			}
 			default:
@@ -259,11 +294,6 @@ public class Connection {
 		} catch (IOException ex) {
 			throw new ConnectionFailException();
 		}
-	}
-
-	/** Ustawia listener wywoływany w momencie gdy użytkownik opuszcza pokój */
-	public void setOnUserLeaveListener(UserLeaveRoomListener userLeaveListner) {
-
 	}
 
 	/** wysyla do serwera liczbe 32 bitowa zgodnie z protokołem */
@@ -362,24 +392,12 @@ public class Connection {
 		return new Packet();
 	}
 
-	/**
-	 * Ustawia listener wywoływany w momencie gdy użytkownik przychodzi do
-	 * pokoju
-	 */
-	public void setOnUserEnterRoomListener(
-			UserEnterRoomListener userEnterRoomListner) {
-
+	public void joinRoom(String roomName) {
+		sendPacket(new int[] { 0x14 }, new String[] { roomName });
 	}
 
-	public void addUsersInRoomListListener(UsersInRoomListListener l) {
-		usersInRoomListListeners.add(l);
+	public void addListener(EventListener l) {
+		listeners.add(l);
 	}
 
-	public void addLoggedSuccessfullyListener(LoggedSuccessfullyListener l) {
-		loggedSuccefullyListeners.add(l);
-	}
-
-	public void addTablesInRommListListener(TablesInRoomListListener l) {
-		tablesInRoomListListeners.add(l);
-	}
 }

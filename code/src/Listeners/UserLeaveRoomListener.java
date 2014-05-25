@@ -1,5 +1,7 @@
 package Listeners;
 
-public interface UserLeaveRoomListener {
+import java.util.EventListener;
+
+public interface UserLeaveRoomListener extends EventListener {
 	public void userLeave(String username);
 }

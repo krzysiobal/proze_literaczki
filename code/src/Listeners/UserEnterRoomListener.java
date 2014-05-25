@@ -1,6 +1,8 @@
 package Listeners;
 
-public interface UserEnterRoomListener {
+import java.util.EventListener;
+
+public interface UserEnterRoomListener extends EventListener {
 	public void userEnter(String username, int rankingPosition,
 			String nationality);
 }

@@ -3,9 +3,14 @@ package UserInterface;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.List;
 
 import javax.swing.BoxLayout;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -16,8 +21,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
+import Containers.Room;
 import Containers.Table;
 import Containers.User;
+import Listeners.RoomListListener;
 import Listeners.TablesInRoomListListener;
 import Listeners.UsersInRoomListListener;
 
@@ -25,7 +32,9 @@ import Listeners.UsersInRoomListListener;
 @SuppressWarnings("serial")
 public class TableAndUserWindow extends JFrame {
 	private AppLogic appLogic;
+	private JComboBox roomsListCombo;
 	private JPanel mainPanel;
+	private JPanel tablesUsersPanel;
 	private JPanel listsPanel;
 	private JTable tablesList;
 	private JTable usersList;
@@ -47,6 +56,8 @@ public class TableAndUserWindow extends JFrame {
 
 	/** Inicjuję klasę TableAndUserWindow **/
 	public void init() {
+		roomsListCombo = new JComboBox<Room>();
+		tablesUsersPanel = new JPanel();
 		mainPanel = new JPanel();
 		listsPanel = new JPanel();
 		tablesListModel = new DefaultTableModel(new Object[] { "Number",
@@ -66,6 +77,15 @@ public class TableAndUserWindow extends JFrame {
 
 		tablesList = new JTable(tablesListModel);
 		usersList = new JTable(usersListModel);
+		// TODO - sortowanie listy użytkowników (po nickach) i stołów (po
+		// numerach)
+		//
+		// TableRowSorter<DefaultTableModel> usersListSorter = new
+		// TableRowSorter<DefaultTableModel>(
+		// usersListModel);
+		// usersListSorter.setSortsOnUpdates(true);
+		// usersList.setRowSorter(usersListSorter);
+
 		usersScrollPane = new JScrollPane();
 		tablesScrollPane = new JScrollPane();
 		menuBar = new JMenuBar();
@@ -87,18 +107,19 @@ public class TableAndUserWindow extends JFrame {
 		usersScrollPane.setPreferredSize(new Dimension(220, tablesScrollPane
 				.getHeight()));
 
-		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.X_AXIS));
-		mainPanel.add(tablesScrollPane);
-		mainPanel.add(usersScrollPane);
+		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+		mainPanel.add(roomsListCombo);
+		mainPanel.add(tablesUsersPanel);
 
-		// addTablesItem(512, 12, "John", "Mark");
-		// addTablesItem(31, 5, "Steven", "asd");
+		tablesUsersPanel.setLayout(new BoxLayout(tablesUsersPanel,
+				BoxLayout.X_AXIS));
+
+		tablesUsersPanel.add(tablesScrollPane);
+		tablesUsersPanel.add(usersScrollPane);
 
 		getContentPane().add(statusBar, java.awt.BorderLayout.SOUTH);
 		setJMenuBar(menuBar);
 
-		mainPanel.add(tablesScrollPane);
-		mainPanel.add(usersScrollPane);
 		add(mainPanel);
 		pack();
 
@@ -111,33 +132,89 @@ public class TableAndUserWindow extends JFrame {
 		});
 
 		createTableItem.addActionListener(new ActionListener() {
-
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				GameWindow win = new GameWindow(appLogic);
+				win.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 				win.setVisible(true);
 			}
 		});
 
-		appLogic.getConnection().addUsersInRoomListListener(
-				new UsersInRoomListListener() {
-					@Override
-					public void usersInRoomList(List<User> users) {
-						for (User u : users)
-							addUsersItem(u);
+		tablesList.addMouseListener(new MouseListener() {
 
+			@Override
+			public void mouseReleased(MouseEvent arg0) {
+
+			}
+
+			@Override
+			public void mousePressed(MouseEvent arg0) {
+
+			}
+
+			@Override
+			public void mouseExited(MouseEvent arg0) {
+
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent arg0) {
+
+			}
+
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				GameWindow win = new GameWindow(appLogic);
+				win.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+				win.setVisible(true);
+			}
+		});
+
+		appLogic.getConnection().addListener(new UsersInRoomListListener() {
+			@Override
+			public void usersInRoomList(List<User> users) {
+				appLogic.getGameRoomData().setUsers(users);
+				for (User u : users)
+					addUsersItem(u);
+
+			}
+		});
+
+		appLogic.getConnection().addListener(new TablesInRoomListListener() {
+			@Override
+			public void tablesInRoomList(List<Table> tables) {
+				appLogic.getGameRoomData().setTables(tables);
+				for (Table t : tables)
+					addTablesItem(t);
+
+			}
+		});
+
+		appLogic.getConnection().addListener(new RoomListListener() {
+			@Override
+			public void roomsList(List<Room> rooms, int currentRoomIndex) {
+				appLogic.getGameRoomData().setRooms(rooms);
+				appLogic.getGameRoomData()
+						.setCurrentRoomIndex(currentRoomIndex);
+				roomsListCombo.removeAllItems();
+
+				for (Room r : rooms)
+					roomsListCombo.addItem(r.getDetails());
+
+				roomsListCombo.setSelectedIndex(currentRoomIndex);
+
+				roomsListCombo.addItemListener(new ItemListener() {
+					@Override
+					public void itemStateChanged(ItemEvent arg0) {
+						if (arg0.getStateChange() == ItemEvent.SELECTED) {
+							appLogic.getConnection().joinRoom(
+									((String) arg0.getItem()));
+						}
 					}
 				});
-		appLogic.getConnection().addTablesInRommListListener(
-				new TablesInRoomListListener() {
+			}
+		});
 
-					@Override
-					public void tablesInRoomList(List<Table> tables) {
-						for (Table t : tables)
-							addTablesItem(t);
-
-					}
-				});
 	}
 
 	/** Dodaje nowy stół do tabeli */
