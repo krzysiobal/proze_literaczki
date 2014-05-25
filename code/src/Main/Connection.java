@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import Containers.Packet;
+import Containers.Table;
 import Containers.User;
 import Exceptions.ConnectionFailException;
 import Exceptions.LoginFailExceptionConnectionProblem;
@@ -18,9 +19,10 @@ import Exceptions.LoginFailExceptionInvalidCredentials;
 import Exceptions.RegisterUsernameExceptionConnectionProblem;
 import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
 import Listeners.LoggedSuccessfullyListener;
+import Listeners.TablesInRoomListListener;
 import Listeners.UserEnterRoomListener;
 import Listeners.UserLeaveRoomListener;
-import Listeners.UsersAtTableListListener;
+import Listeners.UsersInRoomListListener;
 import UserInterface.AppLogic;
 
 /** Klasa odpowiedzialna za połączenie z serwerem */
@@ -32,8 +34,9 @@ public class Connection {
 
 	String ksession;
 
-	List<UsersAtTableListListener> usersAtTableListListeners = new LinkedList<UsersAtTableListListener>();
+	List<UsersInRoomListListener> usersInRoomListListeners = new LinkedList<UsersInRoomListListener>();
 	List<LoggedSuccessfullyListener> loggedSuccefullyListeners = new LinkedList<LoggedSuccessfullyListener>();
+	List<TablesInRoomListListener> tablesInRoomListListeners = new LinkedList<TablesInRoomListListener>();
 
 	public Connection(AppLogic appLogic) {
 		this.appLogic = appLogic;
@@ -157,14 +160,16 @@ public class Connection {
 			int packetId = packet.getNumbers()[0];
 
 			switch (packetId) {
+			case 01: // ping request
+				sendPacket(new int[] {}, new String[] {});
+				break;
+
 			case 18:
 				for (LoggedSuccessfullyListener l : loggedSuccefullyListeners)
 					l.loggedSuccesfully();
 				break;
 
 			case 27: { // receiving list of users in room
-				// JOptionPane.showMessageDialog(null, "pakiet 27");
-
 				List<User> users = new LinkedList<User>();
 
 				for (int i = 0; i < packet.getStrings().length; i++) {
@@ -176,8 +181,36 @@ public class Connection {
 					users.add(u);
 				}
 
-				for (UsersAtTableListListener l : usersAtTableListListeners)
-					l.usersAtTableList(users);
+				for (UsersInRoomListListener l : usersInRoomListListeners)
+					l.usersInRoomList(users);
+				break;
+			}
+
+			case 71: { // receiving list of tables in room
+				// PAKIET: numbers = 335, strings = 249
+				// 71, 4, 3, 814, 0, 1, 1, 885,
+				// 7m, irenara111, medyka41, 15m, , , 10m,
+				List<Table> tables = new LinkedList<Table>();
+				int num_mul = packet.getNumbers()[1];
+				int str_mul = packet.getNumbers()[2];
+				for (int i = 0; i * str_mul < packet.getStrings().length; i += 1) {
+					Table t = new Table();
+					String stime = packet.getStrings()[i * str_mul + 0];
+					try {
+						t.setGameTime(Integer.parseInt(stime.substring(0,
+								stime.length() - 1)));
+					} catch (Exception ex) {
+						t.setGameTime(0);
+					}
+					t.setUsersAtTable(new String[] {
+							packet.getStrings()[i * str_mul + 1],
+							packet.getStrings()[i * str_mul + 2] });
+					t.setNumber(packet.getNumbers()[3 + i * num_mul + 0]);
+					tables.add(t);
+				}
+
+				for (TablesInRoomListListener l : tablesInRoomListListeners)
+					l.tablesInRoomList(tables);
 				break;
 			}
 			default:
@@ -207,12 +240,9 @@ public class Connection {
 
 				@Override
 				public void run() {
-					try {
-						while (true) {
-							Packet packet = receivePacket();
-							interpretPacket(packet);
-						}
-					} catch (IOException ex) {
+					while (true) {
+						Packet packet = receivePacket();
+						interpretPacket(packet);
 					}
 				}
 			}).start();
@@ -251,75 +281,85 @@ public class Connection {
 
 	private int receiveInt32() throws IOException {
 		byte[] array = new byte[4];
-		inFromServer.read(array, 0, array.length);
+		inFromServer.readFully(array, 0, array.length);
 		return ((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16)
 				| ((array[2] & 0xFF) << 8) | ((array[3] & 0xFF) << 0);
 	}
 
 	private int receiveInt16() throws IOException {
 		byte[] array = new byte[2];
-		inFromServer.read(array, 0, array.length);
+		inFromServer.readFully(array, 0, array.length);
 		return ((array[0] & 0xFF) << 8) | (array[1] & 0xFF);
 	}
 
 	/** wysyla podana tablice numbers i strings zgodnie ze specyfikacja pakietu */
-	private void sendPacket(int[] numbers, String[] strings) throws IOException {
-		int len = 0;
-		len += 4 + 4;
-		len += numbers.length * 2;
+	private void sendPacket(int[] numbers, String[] strings) {
+		try {
+			int len = 0;
+			len += 4 + 4;
+			len += numbers.length * 2;
 
-		for (String s : strings) {
-			byte[] array = s.getBytes("UTF8");
-			len += 2 + array.length + 1;
-		}
+			for (String s : strings) {
+				byte[] array = s.getBytes("UTF8");
+				len += 2 + array.length + 1;
+			}
 
-		sendInt32(len);
-		sendInt16(numbers.length);
-		sendInt16(strings.length);
+			sendInt32(len);
+			sendInt16(numbers.length);
+			sendInt16(strings.length);
 
-		for (int n : numbers)
-			sendInt16(n);
+			for (int n : numbers)
+				sendInt16(n);
 
-		for (String s : strings) {
-			byte[] array = s.getBytes("UTF8");
+			for (String s : strings) {
+				byte[] array = s.getBytes("UTF8");
 
-			sendInt16(array.length);
-			outToServer.write(array);
-			outToServer.write(new byte[] { 0 });
+				sendInt16(array.length);
+				outToServer.write(array);
+				outToServer.write(new byte[] { 0 });
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 	}
 
-	private Packet receivePacket() throws IOException {
-		int numbers[];
-		String[] strings;
+	private Packet receivePacket() {
+		try {
+			int numbers[];
+			String[] strings;
 
-		int len = receiveInt32();
-		// System.out.println("LEN=" + len);
+			int len = receiveInt32();
+			// System.out.println("LEN=" + len);
 
-		int numbersCount = receiveInt16();
-		int stringsCount = receiveInt16();
+			int numbersCount = receiveInt16();
+			int stringsCount = receiveInt16();
 
-		// System.out.println("NC=" + numbersCount + ", SC = " + stringsCount);
-		numbers = new int[numbersCount];
-		strings = new String[stringsCount];
+			// System.out.println("NC=" + numbersCount + ", SC = " +
+			// stringsCount);
+			numbers = new int[numbersCount];
+			strings = new String[stringsCount];
 
-		for (int i = 0; i < numbersCount; i++)
-			numbers[i] = receiveInt16();
+			for (int i = 0; i < numbersCount; i++)
+				numbers[i] = receiveInt16();
 
-		for (int i = 0; i < stringsCount; i++) {
-			int stringLen = receiveInt16();
-			byte[] chars = new byte[stringLen];
-			inFromServer.read(chars, 0, stringLen);
-			inFromServer.read();
+			for (int i = 0; i < stringsCount; i++) {
+				int stringLen = receiveInt16();
+				byte[] chars = new byte[stringLen];
+				inFromServer.readFully(chars, 0, stringLen);
+				inFromServer.read();
 
-			strings[i] = new String(chars, "UTF-8");
+				strings[i] = new String(chars, "UTF-8");
+			}
+
+			Packet p = new Packet();
+			p.setNumbers(numbers);
+			p.setStrings(strings);
+			System.out.println(p.toString());
+			return p;
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
-
-		Packet p = new Packet();
-		p.setNumbers(numbers);
-		p.setStrings(strings);
-		System.out.println(p.toString());
-		return p;
+		return new Packet();
 	}
 
 	/**
@@ -331,11 +371,15 @@ public class Connection {
 
 	}
 
-	public void addUsersAtTableListListener(UsersAtTableListListener l) {
-		usersAtTableListListeners.add(l);
+	public void addUsersInRoomListListener(UsersInRoomListListener l) {
+		usersInRoomListListeners.add(l);
 	}
 
 	public void addLoggedSuccessfullyListener(LoggedSuccessfullyListener l) {
 		loggedSuccefullyListeners.add(l);
+	}
+
+	public void addTablesInRommListListener(TablesInRoomListListener l) {
+		tablesInRoomListListeners.add(l);
 	}
 }

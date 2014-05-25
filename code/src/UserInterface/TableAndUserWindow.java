@@ -16,8 +16,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
+import Containers.Table;
 import Containers.User;
-import Listeners.UsersAtTableListListener;
+import Listeners.TablesInRoomListListener;
+import Listeners.UsersInRoomListListener;
 
 /** Klasa wyświetlająca okno z listą stołów i użytkowników */
 @SuppressWarnings("serial")
@@ -117,31 +119,46 @@ public class TableAndUserWindow extends JFrame {
 			}
 		});
 
-		appLogic.getConnection().addUsersAtTableListListener(
-				new UsersAtTableListListener() {
-
+		appLogic.getConnection().addUsersInRoomListListener(
+				new UsersInRoomListListener() {
 					@Override
-					public void usersAtTableList(List<User> users) {
-
-						System.out.println("przyszło");
-
+					public void usersInRoomList(List<User> users) {
 						for (User u : users)
 							addUsersItem(u);
+
+					}
+				});
+		appLogic.getConnection().addTablesInRommListListener(
+				new TablesInRoomListListener() {
+
+					@Override
+					public void tablesInRoomList(List<Table> tables) {
+						for (Table t : tables)
+							addTablesItem(t);
 
 					}
 				});
 	}
 
 	/** Dodaje nowy stół do tabeli */
-	public void addTablesItem(int tableNumber, int time, String firstPlayer,
-			String secondPlayer) {
-		tablesListModel.addRow(new Object[] { "#" + tableNumber, time + " min",
-				firstPlayer, secondPlayer });
+	public void addTablesItem(Table t) {
+		String firstPlayer = "";
+		String secondPlayer = "";
+		if (t.getUsersAtTable() != null) {
+			if (t.getUsersAtTable().length >= 1)
+				firstPlayer = t.getUsersAtTable()[0];
+			if (t.getUsersAtTable().length >= 2)
+				secondPlayer = t.getUsersAtTable()[1];
+		}
+
+		tablesListModel.addRow(new Object[] { "#" + t.getNumber(),
+				t.getGameTime() + " min", firstPlayer, secondPlayer });
 	}
 
 	public void addUsersItem(User u) {
 		usersListModel.addRow(new Object[] { u.getUsername(),
-				u.getRankingPosition(), u.getTableAt() });
+				u.getRankingPosition(),
+				u.getTableAt() == 0 ? "-" : u.getTableAt() });
 	}
 }
 

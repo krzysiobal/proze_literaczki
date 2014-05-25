@@ -9,7 +9,7 @@ public class Table {
 	private int gameTime;
 	private boolean isRanked;
 	private TableAvailability tableAvailability;
-	private User[] usersAtTable;
+	private String[] usersAtTable;
 
 	/** Dla jakich użytkowników stół jest dostępny */
 	enum TableAvailability {
@@ -88,12 +88,12 @@ public class Table {
 	}
 
 	/** zwraca listę użytkowników siedzących przy stole */
-	public User[] getUsersAtTable() {
+	public String[] getUsersAtTable() {
 		return usersAtTable;
 	}
 
 	/** ustawial listę użytkowników siedzących przy stole */
-	public void setUsersAtTable(User[] usersAtTable) {
+	public void setUsersAtTable(String[] usersAtTable) {
 		this.usersAtTable = usersAtTable;
 	}
 }
