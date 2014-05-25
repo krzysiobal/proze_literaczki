@@ -2,6 +2,7 @@ package Containers;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /** Klasa przechowująca informacje o stole */
 public class GameRoomData {
@@ -16,8 +17,8 @@ public class GameRoomData {
 		this.rooms = rooms;
 	}
 
-	List<Table> tables = new LinkedList<Table>();
-	List<User> users = new LinkedList<User>();
+	List<Table> tables = new CopyOnWriteArrayList<Table>();
+	List<User> users = new CopyOnWriteArrayList<User>();
 
 	public List<Table> getTables() {
 		return tables;

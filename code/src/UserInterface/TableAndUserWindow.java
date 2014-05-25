@@ -8,6 +8,7 @@ import java.awt.event.ItemListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.List;
+import java.util.Vector;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
@@ -26,6 +27,8 @@ import Containers.Table;
 import Containers.User;
 import Listeners.RoomListListener;
 import Listeners.TablesInRoomListListener;
+import Listeners.UserEntersRoomListener;
+import Listeners.UserLeavesRoomListener;
 import Listeners.UsersInRoomListListener;
 
 /** Klasa wyświetlająca okno z listą stołów i użytkowników */
@@ -57,6 +60,18 @@ public class TableAndUserWindow extends JFrame {
 	/** Inicjuję klasę TableAndUserWindow **/
 	public void init() {
 		roomsListCombo = new JComboBox<Room>();
+		roomsListCombo.disable();
+		roomsListCombo.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent arg0) {
+				if (arg0.getStateChange() == ItemEvent.SELECTED
+						&& roomsListCombo.isEnabled()) {
+					appLogic.getConnection()
+							.joinRoom(((String) arg0.getItem()));
+				}
+			}
+		});
+
 		tablesUsersPanel = new JPanel();
 		mainPanel = new JPanel();
 		listsPanel = new JPanel();
@@ -173,6 +188,10 @@ public class TableAndUserWindow extends JFrame {
 		appLogic.getConnection().addListener(new UsersInRoomListListener() {
 			@Override
 			public void usersInRoomList(List<User> users) {
+				// remove all users
+				usersListModel.setRowCount(0);
+
+				// now insert users from event
 				appLogic.getGameRoomData().setUsers(users);
 				for (User u : users)
 					addUsersItem(u);
@@ -183,10 +202,13 @@ public class TableAndUserWindow extends JFrame {
 		appLogic.getConnection().addListener(new TablesInRoomListListener() {
 			@Override
 			public void tablesInRoomList(List<Table> tables) {
+				// remove all tables
+				tablesListModel.setRowCount(0);
+
+				// now insert tables from event
 				appLogic.getGameRoomData().setTables(tables);
 				for (Table t : tables)
 					addTablesItem(t);
-
 			}
 		});
 
@@ -196,22 +218,38 @@ public class TableAndUserWindow extends JFrame {
 				appLogic.getGameRoomData().setRooms(rooms);
 				appLogic.getGameRoomData()
 						.setCurrentRoomIndex(currentRoomIndex);
+
+				roomsListCombo.disable();
 				roomsListCombo.removeAllItems();
 
 				for (Room r : rooms)
 					roomsListCombo.addItem(r.getDetails());
 
 				roomsListCombo.setSelectedIndex(currentRoomIndex);
+				roomsListCombo.enable();
+			}
+		});
 
-				roomsListCombo.addItemListener(new ItemListener() {
-					@Override
-					public void itemStateChanged(ItemEvent arg0) {
-						if (arg0.getStateChange() == ItemEvent.SELECTED) {
-							appLogic.getConnection().joinRoom(
-									((String) arg0.getItem()));
-						}
+		appLogic.getConnection().addListener(new UserEntersRoomListener() {
+			@Override
+			public void userEnters(String username, int rankingPosition,
+					String nationality) {
+				User u = new User(username, rankingPosition, 0, nationality);
+				appLogic.getGameRoomData().getUsers().add(u);
+				addUsersItem(u);
+			}
+		});
+
+		appLogic.getConnection().addListener(new UserLeavesRoomListener() {
+			@Override
+			public void userLeaves(String username) {
+				for (User u : appLogic.getGameRoomData().getUsers())
+					if (u.getUsername().equals(username)) {
+						appLogic.getGameRoomData().getUsers().remove(u);
+						break;
 					}
-				});
+				removeUsersItem(username);
+
 			}
 		});
 
@@ -236,6 +274,15 @@ public class TableAndUserWindow extends JFrame {
 		usersListModel.addRow(new Object[] { u.getUsername(),
 				u.getRankingPosition(),
 				u.getTableAt() == 0 ? "-" : u.getTableAt() });
+	}
+
+	public void removeUsersItem(String username) {
+		for (int i = 0; i < usersListModel.getRowCount(); ++i)
+			if ((((Vector) ((usersListModel.getDataVector().elementAt(i))))
+					.elementAt(0)).equals(username)) {
+				usersListModel.removeRow(i);
+				break;
+			}
 	}
 }
 

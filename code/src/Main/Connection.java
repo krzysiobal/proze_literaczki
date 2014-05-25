@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.swing.JOptionPane;
+
 import Containers.Packet;
 import Containers.Room;
 import Containers.Table;
@@ -24,6 +26,8 @@ import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
 import Listeners.LoggedSuccessfullyListener;
 import Listeners.RoomListListener;
 import Listeners.TablesInRoomListListener;
+import Listeners.UserEntersRoomListener;
+import Listeners.UserLeavesRoomListener;
 import Listeners.UsersInRoomListListener;
 import UserInterface.AppLogic;
 
@@ -33,10 +37,9 @@ public class Connection {
 	Socket clientSocket;
 	DataOutputStream outToServer;
 	DataInputStream inFromServer;
-
 	String ksession;
 
-	CopyOnWriteArrayList<EventListener> listeners = new CopyOnWriteArrayList<EventListener>();
+	List<EventListener> listeners = new CopyOnWriteArrayList<EventListener>();
 
 	public Connection(AppLogic appLogic) {
 		this.appLogic = appLogic;
@@ -155,7 +158,6 @@ public class Connection {
 	}
 
 	private void interpretPacket(Packet packet) {
-
 		if (packet.getNumbers().length > 0) {
 			int packetId = packet.getNumbers()[0];
 
@@ -164,11 +166,34 @@ public class Connection {
 				sendPacket(new int[] {}, new String[] {});
 				break;
 
-			case 18:
+			case 18: // entered room
 				for (EventListener l : listeners)
 					if (l instanceof LoggedSuccessfullyListener)
 						((LoggedSuccessfullyListener) l).loggedSuccesfully();
 				break;
+
+			case 25: {// new user enters room
+				for (EventListener l : listeners)
+					if (l instanceof UserEntersRoomListener)
+						((UserEntersRoomListener) l).userEnters(
+								packet.getStrings()[0], packet.getNumbers()[3],
+								"?");
+				// PAKIET: numbers = 4, strings = 1
+				// 25, 0, 0, 1200,
+				// miszczbrydza,
+				break;
+			}
+
+			case 24: {// user leaves room
+				// PAKIET: numbers = 1, strings = 1
+				// 24,
+				// miszczbrydza,
+				for (EventListener l : listeners)
+					if (l instanceof UserLeavesRoomListener)
+						((UserLeavesRoomListener) l).userLeaves(packet
+								.getStrings()[0]);
+				break;
+			}
 
 			case 27: { // receiving list of users in room
 				List<User> users = new LinkedList<User>();
@@ -248,7 +273,19 @@ public class Connection {
 						((TablesInRoomListListener) l).tablesInRoomList(tables);
 				break;
 			}
+
+			case 65535:
+				if (packet.getStrings().length > 0) {
+					JOptionPane.showMessageDialog(null, packet.getStrings()[0]);
+				}
+				try {
+					clientSocket.close();
+				} catch (Exception ex) {
+				}
+				break;
+
 			default:
+				System.out.println(packet.toString());
 				// JOptionPane.showMessageDialog(null, "pakiet inny");
 			}
 		}
@@ -277,7 +314,10 @@ public class Connection {
 				public void run() {
 					while (true) {
 						Packet packet = receivePacket();
-						interpretPacket(packet);
+						if (packet != null)
+							interpretPacket(packet);
+						else
+							break;
 					}
 				}
 			}).start();
@@ -349,7 +389,6 @@ public class Connection {
 				outToServer.write(new byte[] { 0 });
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
 		}
 	}
 
@@ -359,13 +398,10 @@ public class Connection {
 			String[] strings;
 
 			int len = receiveInt32();
-			// System.out.println("LEN=" + len);
 
 			int numbersCount = receiveInt16();
 			int stringsCount = receiveInt16();
 
-			// System.out.println("NC=" + numbersCount + ", SC = " +
-			// stringsCount);
 			numbers = new int[numbersCount];
 			strings = new String[stringsCount];
 
@@ -384,16 +420,14 @@ public class Connection {
 			Packet p = new Packet();
 			p.setNumbers(numbers);
 			p.setStrings(strings);
-			System.out.println(p.toString());
 			return p;
 		} catch (Exception ex) {
-			ex.printStackTrace();
 		}
-		return new Packet();
+		return null;
 	}
 
 	public void joinRoom(String roomName) {
-		sendPacket(new int[] { 0x14 }, new String[] { roomName });
+		sendPacket(new int[] { 0x14 }, new String[] { "/join " + roomName });
 	}
 
 	public void addListener(EventListener l) {
