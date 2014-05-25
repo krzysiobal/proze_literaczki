@@ -7,6 +7,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
@@ -25,6 +26,7 @@ import javax.swing.table.DefaultTableModel;
 import Containers.Room;
 import Containers.Table;
 import Containers.User;
+import Listeners.IncomingPrivateChatMessageListener;
 import Listeners.RoomListListener;
 import Listeners.TablesInRoomListListener;
 import Listeners.UserEntersRoomListener;
@@ -47,6 +49,8 @@ public class TableAndUserWindow extends JFrame {
 	private JScrollPane usersScrollPane;
 	private JScrollPane tablesScrollPane;
 	private StatusBar statusBar;
+
+	HashMap<String, ChatWithUserWindow> chatWindows = new HashMap<String, ChatWithUserWindow>();
 
 	/** Konstruktor klasy TableAndUserWindow */
 	public TableAndUserWindow(AppLogic appLogic) {
@@ -156,7 +160,6 @@ public class TableAndUserWindow extends JFrame {
 		});
 
 		tablesList.addMouseListener(new MouseListener() {
-
 			@Override
 			public void mouseReleased(MouseEvent arg0) {
 
@@ -184,6 +187,62 @@ public class TableAndUserWindow extends JFrame {
 				win.setVisible(true);
 			}
 		});
+
+		usersList.addMouseListener(new MouseListener() {
+
+			@Override
+			public void mouseReleased(MouseEvent arg0) {
+
+			}
+
+			@Override
+			public void mousePressed(MouseEvent arg0) {
+
+			}
+
+			@Override
+			public void mouseExited(MouseEvent arg0) {
+
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent arg0) {
+
+			}
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				JTable target = (JTable) e.getSource();
+				int row = target.getSelectedRow();
+				int column = target.getSelectedColumn();
+
+				String userName = ((Vector) (usersListModel.getDataVector()
+						.elementAt(row))).elementAt(0).toString();
+
+				if (!chatWindows.containsKey(userName))
+					chatWindows.put(userName, new ChatWithUserWindow(appLogic,
+							userName));
+
+				chatWindows.get(userName).setVisible(true);
+			}
+		});
+
+		appLogic.getConnection().addListener(
+				new IncomingPrivateChatMessageListener() {
+					@Override
+					public void incomingPrivateChatMessage(String message,
+							String from) {
+
+						if (!chatWindows.containsKey(from))
+							chatWindows.put(from, new ChatWithUserWindow(
+									appLogic, from));
+
+						chatWindows.get(from).addToChat(message);
+						appLogic.getConnection()
+								.acknowledgePrivateChatMessages(from);
+						chatWindows.get(from).setVisible(true);
+					}
+				});
 
 		appLogic.getConnection().addListener(new UsersInRoomListListener() {
 			@Override

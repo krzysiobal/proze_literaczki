@@ -18,7 +18,7 @@ public class ConfigFile {
 
 	Pattern sectionNamePattern = Pattern.compile("^\\[([a-zA-Z0-9\\._]+)\\]$");
 	Pattern nameValuePattern = Pattern
-			.compile("^([a-zA-Z0-9\\._]+)\\s*=\\s*([a-zA-Z0-9\\._]+)$");
+			.compile("^([a-zA-Z0-9\\._]+)\\s*=\\s*([a-zA-ZŻÓŁĆĘŚĄŹŃżółćęśąźń0-9\\.\\,_]+)$");
 
 	/*
 	 * returns value of given key in section

@@ -23,6 +23,7 @@ import Exceptions.LoginFailExceptionConnectionProblem;
 import Exceptions.LoginFailExceptionInvalidCredentials;
 import Exceptions.RegisterUsernameExceptionConnectionProblem;
 import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
+import Listeners.IncomingPrivateChatMessageListener;
 import Listeners.LoggedSuccessfullyListener;
 import Listeners.RoomListListener;
 import Listeners.TablesInRoomListListener;
@@ -33,6 +34,8 @@ import UserInterface.AppLogic;
 
 /** Klasa odpowiedzialna za połączenie z serwerem */
 public class Connection {
+	boolean debug = false;
+
 	AppLogic appLogic;
 	Socket clientSocket;
 	DataOutputStream outToServer;
@@ -166,6 +169,16 @@ public class Connection {
 				sendPacket(new int[] {}, new String[] {});
 				break;
 
+			case 0x15: {// incoming private chat message
+				for (EventListener l : listeners)
+					if (l instanceof IncomingPrivateChatMessageListener)
+						((IncomingPrivateChatMessageListener) l)
+								.incomingPrivateChatMessage(
+										packet.getStrings()[0],
+										packet.getStrings()[1]);
+				break;
+			}
+
 			case 18: // entered room
 				for (EventListener l : listeners)
 					if (l instanceof LoggedSuccessfullyListener)
@@ -285,7 +298,8 @@ public class Connection {
 				break;
 
 			default:
-				System.out.println(packet.toString());
+				if (debug)
+					System.out.println(packet.toString());
 				// JOptionPane.showMessageDialog(null, "pakiet inny");
 			}
 		}
@@ -428,6 +442,14 @@ public class Connection {
 
 	public void joinRoom(String roomName) {
 		sendPacket(new int[] { 0x14 }, new String[] { "/join " + roomName });
+	}
+
+	public void sendPrivateChatMessage(String toUser, String message) {
+		sendPacket(new int[] { 0x15 }, new String[] { toUser, message });
+	}
+
+	public void acknowledgePrivateChatMessages(String toUser) {
+		sendPacket(new int[] { 0x19, 0x11 }, new String[] { toUser });
 	}
 
 	public void addListener(EventListener l) {

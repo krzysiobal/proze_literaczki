@@ -29,7 +29,7 @@ public class Field extends JButton {
 	/** Ustawia właściwości przycisku */
 	public void setFieldProperties() {
 		setPreferredSize(new Dimension(30, 30));
-		setFont(new Font("Droid Sans Mono", Font.BOLD, 12));
+		setFont(new Font("Droid Sans Mono", Font.BOLD, 24));
 		setBackground(color);
 		setBorder(null);
 		setEnabled(false);

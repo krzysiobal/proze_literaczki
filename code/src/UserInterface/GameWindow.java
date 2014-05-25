@@ -8,6 +8,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.Random;
 import java.util.Vector;
 
 import javax.swing.BoxLayout;
@@ -15,6 +16,9 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.border.LineBorder;
+
+import Utilities.Colors;
 
 /** Klasa wyświetaląca okno ze stołu z trwającą grą */
 @SuppressWarnings("serial")
@@ -64,7 +68,9 @@ public class GameWindow extends JFrame {
 	private UserField secondPlayerPoints;
 
 	/** Zmienna przechowywująca polski alfabet. Z niej będa losowane literki. */
-	private String alphabet = "AĄBCĆDEĘFGHIJKLŁMNŃOUPRSŚTUWYZŹŻ";
+	private String[] letters;
+	private int[] lettersCount;
+	private int[] lettersPoints;
 
 	/** Zmienna określająca kolory pól na planszy */
 	private String[][] net = new String[15][15];
@@ -141,6 +147,18 @@ public class GameWindow extends JFrame {
 	 * Wczytuje plik konfiguracyjny o podanej nazwie, wypełnia zmienną net
 	 */
 	private void loadConfig() {
+		letters = appLogic.getConfigFile().getValue("Letters", "letters")
+				.split(",");
+		lettersCount = new int[letters.length];
+		lettersPoints = new int[letters.length];
+
+		for (int i = 0; i < letters.length; ++i) {
+			lettersCount[i] = Integer.parseInt(appLogic.getConfigFile()
+					.getValue("Letters", "letters_count").split(",")[i]);
+			lettersPoints[i] = Integer.parseInt(appLogic.getConfigFile()
+					.getValue("Letters", "letters_points").split(",")[i]);
+		}
+
 		Vector<String> lines = new Vector<String>();
 
 		for (int i = 1; i <= 15; i++)
@@ -177,19 +195,20 @@ public class GameWindow extends JFrame {
 					fieldLabelColor = "";
 
 				if (col.equals("w"))
-					fieldBackColor = Color.WHITE;
+					fieldBackColor = Colors.fieldWhite;
 				else if (col.equals("g"))
-					fieldBackColor = new Color(0, 255, 0, 95);
+					fieldBackColor = Colors.fieldGreen;
 				else if (col.equals("r"))
-					fieldBackColor = new Color(255, 0, 0, 95);
+					fieldBackColor = Colors.fieldRed;
 				else if (col.equals("b"))
-					fieldBackColor = new Color(0, 0, 255, 95);
+					fieldBackColor = Colors.fieldBlue;
 				else if (col.equals("y"))
-					fieldBackColor = new Color(255, 255, 0, 95);
+					fieldBackColor = Colors.fieldYellow;
 				else
 					fieldBackColor = Color.WHITE;
 
 				final Field f = new Field(fieldBackColor, fieldLabelColor);
+				f.setBorder(new LineBorder(new Color(192, 192, 192), 1));
 
 				// reagowanie na klikniecie pola, na razie nie dziala
 				f.addMouseListener(new MouseListener() {
@@ -219,12 +238,13 @@ public class GameWindow extends JFrame {
 
 					@Override
 					public void mouseClicked(MouseEvent arg0) {
-						// JOptionPane.showMessageDialog(null, "bla");
-						// Random r = new Random();
-						// int i = r.nextInt(alphabet.length());
-						f.setText(getRandomLetter());
-						f.setForeground(Color.BLACK); // alphabet.substring(i, i
-														// + 1));
+						int i = getRandomLetterIndex();
+						f.setText(letters[i]);
+						f.setForeground(Color.BLACK);
+						f.setBackground(Colors
+								.getLetterTileColor(lettersPoints[i]));
+						f.setBorder(new LineBorder(Colors
+								.getLetterTileBorderColor(lettersPoints[i]), 2));
 
 					}
 				});
@@ -232,28 +252,10 @@ public class GameWindow extends JFrame {
 			}
 	}
 
-	// /** sprawdza czy pole powinno mieć podwójną punktację */
-	// private boolean check2x(int i, int j) {
-	// for (int n = 0; n < 8; n++)
-	// if ((i == fields2x[n][0] && j == fields2x[n][1])
-	// || (i == fields2x[n][0] && j == fields2x[n][1]))
-	// return true;
-	// return false;
-	// }
-
-	// /** sprawdza czy pole powinno mieć potrójną punktację */
-	// private boolean check3x(int i, int j) {
-	// for (int n = 0; n < 15; n++)
-	// if ((i == fields3x[n][0] && j == fields3x[n][1])
-	// || (i == fields3x[n][0] && j == fields3x[n][1]))
-	// return true;
-	// return false;
-	// }
-
 	/** Zwraca pseudolosową litere alfabetu */
-	private String getRandomLetter() {
-		int randomNum = (int) (Math.random() * 32);
-		return String.valueOf(alphabet.charAt(randomNum));
+	private int getRandomLetterIndex() {
+		Random r = new Random();
+		return r.nextInt(letters.length);
 	}
 
 	/** Wypełnia tablice net */
