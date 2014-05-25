@@ -222,10 +222,11 @@ public class GameWindow extends JFrame {
 
 					@Override
 					public void mouseClicked(MouseEvent arg0) {
-						JOptionPane.showMessageDialog(null, "bla");
-						Random r = new Random();
-						int i = r.nextInt(alphabet.length());
-						f.setText("A"); // alphabet.substring(i, i + 1));
+						//JOptionPane.showMessageDialog(null, "bla");
+						//Random r = new Random();
+						//int i = r.nextInt(alphabet.length());
+						f.setText(getRandomLetter());
+						f.setForeground(Color.BLACK); // alphabet.substring(i, i + 1));
 					}
 				});
 				fieldsPanel.add(f);
@@ -251,9 +252,9 @@ public class GameWindow extends JFrame {
 	// }
 
 	/** Zwraca pseudolosową litere alfabetu */
-	private char getRandomLetter() {
+	private String getRandomLetter() {
 		int randomNum = (int) (Math.random() * 32);
-		return alphabet.charAt(randomNum);
+		return String.valueOf(alphabet.charAt(randomNum));
 	}
 
 	/** Wypełnia tablice net */
