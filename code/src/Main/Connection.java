@@ -14,6 +14,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.JOptionPane;
 
+import Containers.Move;
+import Containers.MoveTile;
 import Containers.Packet;
 import Containers.Room;
 import Containers.Table;
@@ -23,18 +25,16 @@ import Exceptions.LoginFailExceptionConnectionProblem;
 import Exceptions.LoginFailExceptionInvalidCredentials;
 import Exceptions.RegisterUsernameExceptionConnectionProblem;
 import Exceptions.RegisterUsernameExceptionUserAlreadyExists;
+import Listeners.GameWindowListener;
 import Listeners.IncomingPrivateChatMessageListener;
 import Listeners.LoggedSuccessfullyListener;
-import Listeners.RoomListListener;
-import Listeners.TablesInRoomListListener;
-import Listeners.UserEntersRoomListener;
-import Listeners.UserLeavesRoomListener;
-import Listeners.UsersInRoomListListener;
+import Listeners.UsersTablesRoomsListener;
 import UserInterface.AppLogic;
 
 /** Klasa odpowiedzialna za połączenie z serwerem */
 public class Connection {
 	boolean debug = false;
+	boolean showAllPackets = true;
 
 	AppLogic appLogic;
 	Socket clientSocket;
@@ -161,11 +161,15 @@ public class Connection {
 	}
 
 	private void interpretPacket(Packet packet) {
+		if (showAllPackets) {
+			System.out.println("ODBIERAM " + packet.toString());
+		}
+
 		if (packet.getNumbers().length > 0) {
 			int packetId = packet.getNumbers()[0];
 
 			switch (packetId) {
-			case 01: // ping request
+			case 0x01: // ping request
 				sendPacket(new int[] {}, new String[] {});
 				break;
 
@@ -179,54 +183,58 @@ public class Connection {
 				break;
 			}
 
-			case 18: // entered room
+			case 0x12: // entered room
 				for (EventListener l : listeners)
 					if (l instanceof LoggedSuccessfullyListener)
 						((LoggedSuccessfullyListener) l).loggedSuccesfully();
 				break;
 
-			case 25: {// new user enters room
+			case 0x19: {// user update
+				String username = packet.getStrings()[0];
+				int rank = packet.getNumbers().length != 4 ? 0 : packet
+						.getNumbers()[3];
+				int tableAt = packet.getNumbers()[2];
+				int nationality = packet.getNumbers()[1];
+
+				User user = new User(username, rank, tableAt, "?");
+
 				for (EventListener l : listeners)
-					if (l instanceof UserEntersRoomListener)
-						((UserEntersRoomListener) l).userEnters(
-								packet.getStrings()[0], packet.getNumbers()[3],
-								"?");
-				// PAKIET: numbers = 4, strings = 1
-				// 25, 0, 0, 1200,
-				// miszczbrydza,
+					if (l instanceof UsersTablesRoomsListener)
+						((UsersTablesRoomsListener) l).userUpdate(user);
 				break;
 			}
 
-			case 24: {// user leaves room
-				// PAKIET: numbers = 1, strings = 1
-				// 24,
-				// miszczbrydza,
+			case 0x18: {// user leaves room
+				String username = packet.getStrings()[0];
 				for (EventListener l : listeners)
-					if (l instanceof UserLeavesRoomListener)
-						((UserLeavesRoomListener) l).userLeaves(packet
-								.getStrings()[0]);
+					if (l instanceof UsersTablesRoomsListener)
+						((UsersTablesRoomsListener) l).userLeaves(username);
 				break;
 			}
 
-			case 27: { // receiving list of users in room
+			case 0x1b: { // receiving list of users in room
 				List<User> users = new LinkedList<User>();
+				int intsperuser = packet.getNumbers()[1];
 
 				for (int i = 0; i < packet.getStrings().length; i++) {
 					String username = packet.getStrings()[i];
-					int rankingPosition = packet.getNumbers()[3 + (3 * i) + 2];
-					int tableNo = packet.getNumbers()[3 + (3 * i) + 1];
-					int nationality = packet.getNumbers()[3 + (3 * i) + 0];
+
+					int rankingPosition = intsperuser != 3 ? 0 : packet
+							.getNumbers()[3 + (intsperuser * i) + 2];
+					int tableNo = packet.getNumbers()[3 + (intsperuser * i) + 1];
+					int nationality = packet.getNumbers()[3 + (intsperuser * i) + 0];
+
 					User u = new User(username, rankingPosition, tableNo, null);
 					users.add(u);
 				}
 
 				for (EventListener l : listeners)
-					if (l instanceof UsersInRoomListListener)
-						((UsersInRoomListListener) l).usersInRoomList(users);
+					if (l instanceof UsersTablesRoomsListener)
+						((UsersTablesRoomsListener) l).usersInRoomList(users);
 				break;
 			}
 
-			case 32: { // receiving list of rooms
+			case 0x20: { // receiving list of rooms
 				// PAKIET: numbers = 2, strings = 1
 				// 32, 6,
 				// #100... bocianowo (pełny)
@@ -251,14 +259,31 @@ public class Connection {
 				int currentRoomIndex = packet.getNumbers()[1];
 
 				for (EventListener l : listeners)
-					if (l instanceof RoomListListener)
-						((RoomListListener) l).roomsList(rooms,
+					if (l instanceof UsersTablesRoomsListener)
+						((UsersTablesRoomsListener) l).roomsList(rooms,
 								currentRoomIndex);
 				break;
 
 			}
 
-			case 71: { // receiving list of tables in room
+			case 0x46: { // table on list update
+				String stime = packet.getStrings()[0];
+				String user1 = packet.getStrings()[1];
+				String user2 = packet.getStrings()[2];
+				int tableNo = packet.getNumbers()[1];
+
+				Table t = new Table();
+				t.setGameTime(stime);
+				t.setUsersAtTable(new String[] { user1, user2 });
+				t.setNumber(tableNo);
+
+				for (EventListener l : listeners)
+					if (l instanceof UsersTablesRoomsListener)
+						((UsersTablesRoomsListener) l).tableUpdate(t);
+				break;
+			}
+
+			case 0x47: { // receiving list of tables in room
 				// PAKIET: numbers = 335, strings = 249
 				// 71, 4, 3, 814, 0, 1, 1, 885,
 				// 7m, irenara111, medyka41, 15m, , , 10m,
@@ -268,12 +293,7 @@ public class Connection {
 				for (int i = 0; i * str_mul < packet.getStrings().length; i += 1) {
 					Table t = new Table();
 					String stime = packet.getStrings()[i * str_mul + 0];
-					try {
-						t.setGameTime(Integer.parseInt(stime.substring(0,
-								stime.length() - 1)));
-					} catch (Exception ex) {
-						t.setGameTime(0);
-					}
+					t.setGameTime(stime);
 					t.setUsersAtTable(new String[] {
 							packet.getStrings()[i * str_mul + 1],
 							packet.getStrings()[i * str_mul + 2] });
@@ -282,12 +302,62 @@ public class Connection {
 				}
 
 				for (EventListener l : listeners)
-					if (l instanceof TablesInRoomListListener)
-						((TablesInRoomListListener) l).tablesInRoomList(tables);
+					if (l instanceof UsersTablesRoomsListener)
+						((UsersTablesRoomsListener) l).tablesInRoomList(tables);
 				break;
 			}
 
-			case 65535:
+			case 0x48: { // delete table from list
+				int tableNo = packet.getNumbers()[1];
+				for (EventListener l : listeners)
+					if (l instanceof UsersTablesRoomsListener)
+						((UsersTablesRoomsListener) l).tableCloses(tableNo);
+				break;
+			}
+
+			case 0x49: {
+				int tableNo = packet.getNumbers()[1];
+
+				for (EventListener l : listeners)
+					if (l instanceof GameWindowListener)
+						((GameWindowListener) l).openGameWindow(tableNo);
+				break;
+			}
+
+			case 0x5b: {
+				int tableNo = packet.getNumbers()[1];
+				List<Move> moves = new LinkedList<Move>();
+
+				int in = 2;
+				int is = 0;
+				while (in < packet.getNumbers().length
+						&& is < packet.getStrings().length) {
+					Move m = new Move();
+					m.setDescription(packet.getStrings()[is]);
+					while (packet.getNumbers()[in] != 0) {
+						MoveTile mt = new MoveTile();
+						int x = packet.getNumbers()[in] / 128 % 16;
+						int y = packet.getNumbers()[in] / 2048 % 16;
+						int l = packet.getNumbers()[in] % 128;
+						mt.setX(x);
+						mt.setY(y);
+						mt.setLetter(l);
+						m.getTiles().add(mt);
+						in++;
+					}
+
+					moves.add(m);
+					is++;
+					in++;
+				}
+
+				for (EventListener l : listeners)
+					if (l instanceof GameWindowListener)
+						((GameWindowListener) l).gameMoves(tableNo, moves);
+				break;
+			}
+
+			case 0xffff:
 				if (packet.getStrings().length > 0) {
 					JOptionPane.showMessageDialog(null, packet.getStrings()[0]);
 				}
@@ -378,6 +448,13 @@ public class Connection {
 
 	/** wysyla podana tablice numbers i strings zgodnie ze specyfikacja pakietu */
 	private void sendPacket(int[] numbers, String[] strings) {
+		if (showAllPackets) {
+			Packet p = new Packet();
+			p.setNumbers(numbers);
+			p.setStrings(strings);
+			System.out.println("WYSYŁAM " + p.toString());
+		}
+
 		try {
 			int len = 0;
 			len += 4 + 4;
@@ -450,6 +527,14 @@ public class Connection {
 
 	public void acknowledgePrivateChatMessages(String toUser) {
 		sendPacket(new int[] { 0x19, 0x11 }, new String[] { toUser });
+	}
+
+	public void enterTable(int tableNumber) {
+		sendPacket(new int[] { 0x0048, tableNumber }, new String[] {});
+	}
+
+	public void leavetable(int tableNumber) {
+		sendPacket(new int[] { 0x0049, tableNumber }, new String[] {});
 	}
 
 	public void addListener(EventListener l) {

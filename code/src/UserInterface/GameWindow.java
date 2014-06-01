@@ -2,12 +2,14 @@ package UserInterface;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
@@ -18,6 +20,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.LineBorder;
 
+import Containers.Move;
+import Containers.MoveTile;
 import Utilities.Colors;
 
 /** Klasa wyświetaląca okno ze stołu z trwającą grą */
@@ -50,10 +54,10 @@ public class GameWindow extends JFrame {
 	private JLabel tableNumber;
 
 	/** Przycisk minimalizacji okna. */
-	private JButton minButton;
+	// private JButton minButton;
 
 	/** Przycisk zamykający okno */
-	private JButton exitButton;
+	// private JButton exitButton;
 
 	/** Pole zawierające nazwę pierwszego gracza. */
 	private UserField firstPlayerField;
@@ -75,15 +79,21 @@ public class GameWindow extends JFrame {
 	/** Zmienna określająca kolory pól na planszy */
 	private String[][] net = new String[15][15];
 	private int[][] muls = new int[15][15];
+	Field[][] fields = new Field[15][15];
+
+	int tableNo;
 
 	/** Konstruktor okna, wczytuje plik konfiguracyjny */
-	public GameWindow(AppLogic appLogic) {
+	public GameWindow(AppLogic appLogic, int tableNo) {
 		this.appLogic = appLogic;
+		this.tableNo = tableNo;
+
 		loadConfig();
 		init();
-		setTitle("Literaki");
+
+		setTitle(String.format("Literaki - table #%d", tableNo));
 		setLocationRelativeTo(null);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		setFocusable(true);
 	}
 
@@ -99,9 +109,9 @@ public class GameWindow extends JFrame {
 		firstPlayerPoints = new UserField("43");
 		secondPlayerPoints = new UserField("78");
 
-		minButton = new JButton("Minimize");
-		exitButton = new JButton("Exit");
-		tableNumber = new JLabel("table #314");
+		// minButton = new JButton("Minimize");
+		// exitButton = new JButton("Exit");
+		tableNumber = new JLabel(String.format("table #%d", tableNo));
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 		fieldsPanel = new JPanel();
 		fieldsPanel.setLayout(new GridLayout(15, 15));
@@ -112,8 +122,8 @@ public class GameWindow extends JFrame {
 		infoPanel.add(infoPanelLetters);
 
 		infoPanelOne.add(tableNumber);
-		infoPanelOne.add(minButton);
-		infoPanelOne.add(exitButton);
+		// infoPanelOne.add(minButton);
+		// infoPanelOne.add(exitButton);
 
 		infoPanelTwo.add(firstPlayerPoints);
 		infoPanelTwo.add(firstPlayerField);
@@ -135,12 +145,19 @@ public class GameWindow extends JFrame {
 		add(mainPanel);
 		pack();
 
-		exitButton.addActionListener(new ActionListener() {
+		addWindowListener(new WindowAdapter() {
 			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				GameWindow.this.dispose();
+			public void windowClosing(WindowEvent we) {
+				appLogic.getConnection().leavetable(tableNo);
 			}
 		});
+
+		// exitButton.addActionListener(new ActionListener() {
+		// @Override
+		// public void actionPerformed(ActionEvent arg0) {
+		// GameWindow.this.dispose();
+		// }
+		// });
 	}
 
 	/**
@@ -208,6 +225,7 @@ public class GameWindow extends JFrame {
 					fieldBackColor = Color.WHITE;
 
 				final Field f = new Field(fieldBackColor, fieldLabelColor);
+				fields[i][j] = f;
 				f.setBorder(new LineBorder(new Color(192, 192, 192), 1));
 
 				// reagowanie na klikniecie pola, na razie nie dziala
@@ -266,6 +284,33 @@ public class GameWindow extends JFrame {
 				net[i][j] = String.valueOf(l.charAt(j));
 			++i;
 		}
+	}
+
+	public void setMoves(final List<Move> moves) {
+		EventQueue.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				for (Move m : moves) {
+					for (MoveTile mt : m.getTiles()) {
+						boolean onBlank = mt.getLetter() >= 64;
+						int l = mt.getLetter() % 64 - 2;
+						if (l < 0 || l >= letters.length)
+							continue;
+
+						Field f = fields[mt.getY()][mt.getX()];
+						f.setText(letters[l % 64]);
+						f.setForeground(Color.BLACK);
+						f.setBackground(Colors
+								.getLetterTileColor(lettersPoints[onBlank ? 0
+										: l]));
+						f.setBorder(new LineBorder(
+								Colors.getLetterTileBorderColor(lettersPoints[onBlank ? 0
+										: l]), 2));
+					}
+				}
+			}
+		});
+
 	}
 }
 

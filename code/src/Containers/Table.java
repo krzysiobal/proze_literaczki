@@ -6,7 +6,7 @@ import java.util.Properties;
 public class Table {
 	private int number;
 	private Properties tableProperties;
-	private int gameTime;
+	private String gameTime;
 	private boolean isRanked;
 	private TableAvailability tableAvailability;
 	private String[] usersAtTable;
@@ -58,12 +58,12 @@ public class Table {
 	}
 
 	/** zwraca czas, jaki trwa gra przy tym stole */
-	public int getGameTime() {
+	public String getGameTime() {
 		return gameTime;
 	}
 
 	/** ustawia czas, jaki trwa gra przy tym stole */
-	public void setGameTime(int gameTime) {
+	public void setGameTime(String gameTime) {
 		this.gameTime = gameTime;
 	}
 

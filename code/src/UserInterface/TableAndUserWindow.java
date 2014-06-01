@@ -1,6 +1,7 @@
 package UserInterface;
 
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -9,7 +10,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
@@ -21,17 +21,16 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.table.DefaultTableModel;
 
+import Containers.Move;
 import Containers.Room;
 import Containers.Table;
 import Containers.User;
+import Listeners.GameWindowListener;
 import Listeners.IncomingPrivateChatMessageListener;
-import Listeners.RoomListListener;
-import Listeners.TablesInRoomListListener;
-import Listeners.UserEntersRoomListener;
-import Listeners.UserLeavesRoomListener;
-import Listeners.UsersInRoomListListener;
+import Listeners.UsersTablesRoomsListener;
+import Models.TablesListTableModel;
+import Models.UsersListTableModel;
 
 /** Klasa wyświetlająca okno z listą stołów i użytkowników */
 @SuppressWarnings("serial")
@@ -43,14 +42,15 @@ public class TableAndUserWindow extends JFrame {
 	private JPanel listsPanel;
 	private JTable tablesList;
 	private JTable usersList;
-	private DefaultTableModel tablesListModel;
-	private DefaultTableModel usersListModel;
+	private TablesListTableModel tablesListModel;
+	private UsersListTableModel usersListModel;
 	private JMenuBar menuBar;
 	private JScrollPane usersScrollPane;
 	private JScrollPane tablesScrollPane;
 	private StatusBar statusBar;
 
 	HashMap<String, ChatWithUserWindow> chatWindows = new HashMap<String, ChatWithUserWindow>();
+	HashMap<Integer, GameWindow> gameWindows = new HashMap<Integer, GameWindow>();
 
 	/** Konstruktor klasy TableAndUserWindow */
 	public TableAndUserWindow(AppLogic appLogic) {
@@ -76,37 +76,24 @@ public class TableAndUserWindow extends JFrame {
 			}
 		});
 
+		usersScrollPane = new JScrollPane();
+		usersListModel = new UsersListTableModel(appLogic.getGameRoomData()
+				.getUsers());
+		usersList = new JTable(usersListModel);
+		usersScrollPane.getViewport().add(usersList);
+		usersScrollPane.setPreferredSize(new Dimension(300, 300));
+
+		tablesScrollPane = new JScrollPane();
 		tablesUsersPanel = new JPanel();
+		tablesListModel = new TablesListTableModel(appLogic.getGameRoomData()
+				.getTables());
+		tablesList = new JTable(tablesListModel);
+		tablesScrollPane.getViewport().add(tablesList);
+		tablesScrollPane.setPreferredSize(new Dimension(400, 300));
+
 		mainPanel = new JPanel();
 		listsPanel = new JPanel();
-		tablesListModel = new DefaultTableModel(new Object[] { "Number",
-				"Time", "1st player", "2nd player" }, 0) {
-			@Override
-			public boolean isCellEditable(int row, int column) {
-				return false;
-			}
-		};
-		usersListModel = new DefaultTableModel(new Object[] { "Username",
-				"Rank", "Playing" }, 0) {
-			@Override
-			public boolean isCellEditable(int row, int column) {
-				return false;
-			}
-		};
 
-		tablesList = new JTable(tablesListModel);
-		usersList = new JTable(usersListModel);
-		// TODO - sortowanie listy użytkowników (po nickach) i stołów (po
-		// numerach)
-		//
-		// TableRowSorter<DefaultTableModel> usersListSorter = new
-		// TableRowSorter<DefaultTableModel>(
-		// usersListModel);
-		// usersListSorter.setSortsOnUpdates(true);
-		// usersList.setRowSorter(usersListSorter);
-
-		usersScrollPane = new JScrollPane();
-		tablesScrollPane = new JScrollPane();
 		menuBar = new JMenuBar();
 		statusBar = new StatusBar();
 		JMenu menuGame = new JMenu("Game");
@@ -120,11 +107,6 @@ public class TableAndUserWindow extends JFrame {
 		menuGame.add(exitGameItem);
 		menuBar.add(menuGame);
 		menuBar.add(menuHelp);
-		tablesScrollPane.getViewport().add(tablesList);
-		tablesScrollPane.setPreferredSize(new Dimension(400, 300));
-		usersScrollPane.getViewport().add(usersList);
-		usersScrollPane.setPreferredSize(new Dimension(220, tablesScrollPane
-				.getHeight()));
 
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 		mainPanel.add(roomsListCombo);
@@ -153,7 +135,7 @@ public class TableAndUserWindow extends JFrame {
 		createTableItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				GameWindow win = new GameWindow(appLogic);
+				GameWindow win = new GameWindow(appLogic, 0);
 				win.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 				win.setVisible(true);
 			}
@@ -182,9 +164,10 @@ public class TableAndUserWindow extends JFrame {
 
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
-				GameWindow win = new GameWindow(appLogic);
-				win.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-				win.setVisible(true);
+				JTable target = (JTable) arg0.getSource();
+				int row = target.getSelectedRow();
+				int tableNo = tablesListModel.getTable(row).getNumber();
+				appLogic.getConnection().enterTable(tableNo);
 			}
 		});
 
@@ -214,10 +197,7 @@ public class TableAndUserWindow extends JFrame {
 			public void mouseClicked(MouseEvent e) {
 				JTable target = (JTable) e.getSource();
 				int row = target.getSelectedRow();
-				int column = target.getSelectedColumn();
-
-				String userName = ((Vector) (usersListModel.getDataVector()
-						.elementAt(row))).elementAt(0).toString();
+				String userName = usersListModel.getUser(row).getUsername();
 
 				if (!chatWindows.containsKey(userName))
 					chatWindows.put(userName, new ChatWithUserWindow(appLogic,
@@ -244,104 +224,103 @@ public class TableAndUserWindow extends JFrame {
 					}
 				});
 
-		appLogic.getConnection().addListener(new UsersInRoomListListener() {
+		appLogic.getConnection().addListener(new UsersTablesRoomsListener() {
 			@Override
 			public void usersInRoomList(List<User> users) {
-				// remove all users
-				usersListModel.setRowCount(0);
-
-				// now insert users from event
-				appLogic.getGameRoomData().setUsers(users);
-				for (User u : users)
-					addUsersItem(u);
-
+				synchronized (this) {
+					appLogic.getGameRoomData().getUsers().addUsers(users);
+					usersListModel.fireTableDataChanged();
+				}
 			}
-		});
 
-		appLogic.getConnection().addListener(new TablesInRoomListListener() {
 			@Override
-			public void tablesInRoomList(List<Table> tables) {
-				// remove all tables
-				tablesListModel.setRowCount(0);
-
-				// now insert tables from event
-				appLogic.getGameRoomData().setTables(tables);
-				for (Table t : tables)
-					addTablesItem(t);
+			public void userUpdate(User user) {
+				synchronized (this) {
+					appLogic.getGameRoomData().getUsers().addUpdateUser(user);
+					usersListModel.fireTableDataChanged();
+				}
 			}
-		});
 
-		appLogic.getConnection().addListener(new RoomListListener() {
-			@Override
-			public void roomsList(List<Room> rooms, int currentRoomIndex) {
-				appLogic.getGameRoomData().setRooms(rooms);
-				appLogic.getGameRoomData()
-						.setCurrentRoomIndex(currentRoomIndex);
-
-				roomsListCombo.disable();
-				roomsListCombo.removeAllItems();
-
-				for (Room r : rooms)
-					roomsListCombo.addItem(r.getDetails());
-
-				roomsListCombo.setSelectedIndex(currentRoomIndex);
-				roomsListCombo.enable();
-			}
-		});
-
-		appLogic.getConnection().addListener(new UserEntersRoomListener() {
-			@Override
-			public void userEnters(String username, int rankingPosition,
-					String nationality) {
-				User u = new User(username, rankingPosition, 0, nationality);
-				appLogic.getGameRoomData().getUsers().add(u);
-				addUsersItem(u);
-			}
-		});
-
-		appLogic.getConnection().addListener(new UserLeavesRoomListener() {
 			@Override
 			public void userLeaves(String username) {
-				for (User u : appLogic.getGameRoomData().getUsers())
-					if (u.getUsername().equals(username)) {
-						appLogic.getGameRoomData().getUsers().remove(u);
-						break;
-					}
-				removeUsersItem(username);
+				synchronized (this) {
+					appLogic.getGameRoomData().getUsers().deleteUser(username);
+					usersListModel.fireTableDataChanged();
+				}
+			}
 
+			@Override
+			public void tablesInRoomList(List<Table> tables) {
+				synchronized (this) {
+					appLogic.getGameRoomData().getTables().addTables(tables);
+					tablesListModel.fireTableDataChanged();
+				}
+			}
+
+			@Override
+			public void tableUpdate(Table table) {
+				synchronized (this) {
+					appLogic.getGameRoomData().getTables()
+							.addUpdateTable(table);
+					tablesListModel.fireTableDataChanged();
+				}
+			}
+
+			@Override
+			public void tableCloses(int number) {
+				synchronized (this) {
+					appLogic.getGameRoomData().getTables().deleteTable(number);
+					tablesListModel.fireTableDataChanged();
+				}
+			}
+
+			@Override
+			public void roomsList(final List<Room> rooms,
+					final int currentRoomIndex) {
+				EventQueue.invokeLater(new Runnable() {
+					public void run() {
+						appLogic.getGameRoomData().setRooms(rooms);
+						appLogic.getGameRoomData().setCurrentRoomIndex(
+								currentRoomIndex);
+
+						roomsListCombo.disable();
+						roomsListCombo.removeAllItems();
+
+						for (Room r : rooms)
+							roomsListCombo.addItem(r.getDetails());
+
+						roomsListCombo.setSelectedIndex(currentRoomIndex);
+						roomsListCombo.enable();
+					}
+				});
 			}
 		});
 
+		appLogic.getConnection().addListener(new GameWindowListener() {
+			@Override
+			public void tableSettings(int tableNo, String operatorNickname) {
+			}
+
+			@Override
+			public void openGameWindow(int tableNo) {
+				if (!gameWindows.containsKey(tableNo))
+					gameWindows.put(tableNo, new GameWindow(appLogic, tableNo));
+				gameWindows.get(tableNo).setVisible(true);
+			}
+
+			@Override
+			public void gameMoves(int tableNo, List<Move> moves) {
+				gameWindows.get(tableNo).setMoves(moves);
+			}
+		});
 	}
 
 	/** Dodaje nowy stół do tabeli */
-	public void addTablesItem(Table t) {
-		String firstPlayer = "";
-		String secondPlayer = "";
-		if (t.getUsersAtTable() != null) {
-			if (t.getUsersAtTable().length >= 1)
-				firstPlayer = t.getUsersAtTable()[0];
-			if (t.getUsersAtTable().length >= 2)
-				secondPlayer = t.getUsersAtTable()[1];
+	public void addTablesItem(final Table t) {
+		synchronized (this) {
+			appLogic.getGameRoomData().getTables().addUpdateTable(t);
+			tablesListModel.fireTableDataChanged();
 		}
-
-		tablesListModel.addRow(new Object[] { "#" + t.getNumber(),
-				t.getGameTime() + " min", firstPlayer, secondPlayer });
-	}
-
-	public void addUsersItem(User u) {
-		usersListModel.addRow(new Object[] { u.getUsername(),
-				u.getRankingPosition(),
-				u.getTableAt() == 0 ? "-" : u.getTableAt() });
-	}
-
-	public void removeUsersItem(String username) {
-		for (int i = 0; i < usersListModel.getRowCount(); ++i)
-			if ((((Vector) ((usersListModel.getDataVector().elementAt(i))))
-					.elementAt(0)).equals(username)) {
-				usersListModel.removeRow(i);
-				break;
-			}
 	}
 }
 

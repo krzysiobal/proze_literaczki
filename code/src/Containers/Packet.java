@@ -25,7 +25,7 @@ public class Packet {
 		String result = "PAKIET: numbers = " + numbers.length + ", strings = "
 				+ strings.length + "\n        ";
 		for (int n : numbers)
-			result += n + ", ";
+			result += String.format("0x%04x", n) + ", ";
 		result += "\n        ";
 		for (String s : strings)
 			result += s + ", ";
