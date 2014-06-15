@@ -1,11 +1,13 @@
 package UserInterface;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -122,8 +124,9 @@ public class GameWindow extends JFrame {
 		chatHistory.setWrapStyleWord(true);
 		final JTextField chatMessageToSend = new JTextField();
 
+		chatPanel.setLayout(new BorderLayout());
 		chatPanel.add(chatHistoryScrollPane);
-		chatPanel.add(chatMessageToSend);
+		chatPanel.add(chatMessageToSend, BorderLayout.SOUTH);
 
 		chatMessageToSend.addKeyListener(new KeyListener() {
 
@@ -425,12 +428,10 @@ public class GameWindow extends JFrame {
 
 							@Override
 							public void mouseDragged(MouseEvent e) {
-
-								f.setBounds(e.getX(), e.getY(), f.getWidth(),
-										f.getHeight());
+								f.setBounds(e.getX(), e.getY(), f.getWidth(), f.getHeight());
+								f.setLocation(new Point(getMousePosition().x - 20,getMousePosition().y + -10));
 							}
 						});
-
 					}
 				}
 				repaint();
@@ -561,7 +562,6 @@ class UserPanelInfoField extends JButton {
 
 	public void setNonClickable() {
 		removeActionListener(al);
-		;
 		setEnabled(false);
 	}
 }

@@ -1,7 +1,9 @@
 package UserInterface;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -112,7 +114,8 @@ public class TableAndUserWindow extends JFrame {
 		menuBar.add(menuHelp);
 
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-		mainPanel.add(roomsListCombo);
+		mainPanel.setLayout(new BorderLayout());
+		mainPanel.add(roomsListCombo, BorderLayout.NORTH);
 		mainPanel.add(tablesUsersPanel);
 
 		tablesUsersPanel.setLayout(new BoxLayout(tablesUsersPanel,
