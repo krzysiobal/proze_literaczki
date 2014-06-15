@@ -1,6 +1,7 @@
 /Containers
+/UserInterface
+/Main
 /Exceptions
 /Listeners
-/Main
 /Models
-/UserInterface
+/Utilities

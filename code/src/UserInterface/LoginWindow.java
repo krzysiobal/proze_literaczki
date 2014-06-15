@@ -7,6 +7,8 @@ import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -134,69 +136,12 @@ public class LoginWindow extends JFrame {
 					System.exit(0);
 				}
 			});
-
+			
 			btnLogin.addActionListener(new ActionListener() {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					if (checkLogRegFormState()) {
-						appLogic.setUsername(usernameTextField.getText());
-						appLogic.setPassword(passwordTextField.getText());
-
-						if (checkBoxRegisterUsername.isSelected()) {
-							if (!passwordTextField.getText().equals(
-									repeatPasswordTextField.getText())) {
-								showMessageDialog("Passwords do not match.");
-							} else
-								try {
-									appLogic.getConnection().registerUsername(
-											usernameTextField.getText(),
-											passwordTextField.getText());
-
-									appLogic.getConnection().addListener(
-											new LoggedSuccessfullyListener() {
-												@Override
-												public void loggedSuccesfully() {
-													showTablesAndUsers();
-												}
-											});
-
-									appLogic.getConnection().connect("ad");
-
-								} catch (RegisterUsernameExceptionConnectionProblem ex) {
-									showMessageDialog("Error during registration:\nconnection problem occured");
-								} catch (RegisterUsernameExceptionUserAlreadyExists ex) {
-									showMessageDialog("Error during registration:\nselected username already exists.\n\nPlease choose another username.");
-								} catch (ConnectionFailException ex) {
-									showMessageDialog("Error during connecting.");
-								}
-
-						} else { // logowanie
-							try {
-								appLogic.getConnection().login(
-										usernameTextField.getText(),
-										passwordTextField.getText());
-
-								appLogic.getConnection().addListener(
-										new LoggedSuccessfullyListener() {
-											@Override
-											public void loggedSuccesfully() {
-												showTablesAndUsers();
-											}
-										});
-
-								appLogic.getConnection().connect("ad");
-
-							} catch (LoginFailExceptionConnectionProblem ex) {
-								showMessageDialog("Error during loggin in:\nconnection problem occured");
-							} catch (LoginFailExceptionInvalidCredentials ex) {
-								showMessageDialog("Error during loggin in:\ninvalid credentials");
-							} catch (ConnectionFailException ex) {
-								showMessageDialog("Error during connecting.");
-							}
-
-						}
-					}
+					registerOrLogin();
 				}
 			});
 
@@ -220,6 +165,67 @@ public class LoginWindow extends JFrame {
 					}
 				}
 			});
+		}
+		
+		public void registerOrLogin() {
+			if (checkLogRegFormState()) {
+				appLogic.setUsername(usernameTextField.getText());
+				appLogic.setPassword(passwordTextField.getText());
+
+				if (checkBoxRegisterUsername.isSelected()) {
+					if (!passwordTextField.getText().equals(
+							repeatPasswordTextField.getText())) {
+						showMessageDialog("Passwords do not match.");
+					} else
+						try {
+							appLogic.getConnection().registerUsername(
+									usernameTextField.getText(),
+									passwordTextField.getText());
+
+							appLogic.getConnection().addListener(
+									new LoggedSuccessfullyListener() {
+										@Override
+										public void loggedSuccesfully() {
+											showTablesAndUsers();
+										}
+									});
+
+							appLogic.getConnection().connect("ad");
+
+						} catch (RegisterUsernameExceptionConnectionProblem ex) {
+							showMessageDialog("Error during registration:\nconnection problem occured");
+						} catch (RegisterUsernameExceptionUserAlreadyExists ex) {
+							showMessageDialog("Error during registration:\nselected username already exists.\n\nPlease choose another username.");
+						} catch (ConnectionFailException ex) {
+							showMessageDialog("Error during connecting.");
+						}
+
+				} else { // logowanie
+					try {
+						appLogic.getConnection().login(
+								usernameTextField.getText(),
+								passwordTextField.getText());
+
+						appLogic.getConnection().addListener(
+								new LoggedSuccessfullyListener() {
+									@Override
+									public void loggedSuccesfully() {
+										showTablesAndUsers();
+									}
+								});
+
+						appLogic.getConnection().connect("ad");
+
+					} catch (LoginFailExceptionConnectionProblem ex) {
+						showMessageDialog("Error during loggin in:\nconnection problem occured");
+					} catch (LoginFailExceptionInvalidCredentials ex) {
+						showMessageDialog("Error during loggin in:\ninvalid credentials");
+					} catch (ConnectionFailException ex) {
+						showMessageDialog("Error during connecting.");
+					}
+
+				}
+			}
 		}
 
 		@Override

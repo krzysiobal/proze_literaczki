@@ -1,5 +1,6 @@
 package UserInterface;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -129,8 +130,9 @@ public class GameWindow extends JFrame {
 		chatHistory.setWrapStyleWord(true);
 		final JTextField chatMessageToSend = new JTextField();
 
+		chatPanel.setLayout(new BorderLayout());
 		chatPanel.add(chatHistoryScrollPane);
-		chatPanel.add(chatMessageToSend);
+		chatPanel.add(chatMessageToSend, BorderLayout.SOUTH);
 
 		chatMessageToSend.addKeyListener(new KeyListener() {
 
