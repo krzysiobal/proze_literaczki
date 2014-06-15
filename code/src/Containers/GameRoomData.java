@@ -3,7 +3,10 @@ package Containers;
 import java.util.LinkedList;
 import java.util.List;
 
-/** Klasa przechowująca informacje o stole */
+/**
+ * Klasa przechowująca informacje o pokoju, w którym jesteś - dane o wszystkich
+ * stołach, użytkownikach oraz innych pokojach, na które możesz wejść
+ */
 public class GameRoomData {
 	List<Room> rooms = new LinkedList<Room>();
 	int currentRoomIndex;

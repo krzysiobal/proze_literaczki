@@ -10,6 +10,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
@@ -22,6 +24,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 
+import Containers.ChairsOnTable;
 import Containers.Move;
 import Containers.Room;
 import Containers.Table;
@@ -49,8 +52,8 @@ public class TableAndUserWindow extends JFrame {
 	private JScrollPane tablesScrollPane;
 	private StatusBar statusBar;
 
-	HashMap<String, ChatWithUserWindow> chatWindows = new HashMap<String, ChatWithUserWindow>();
-	HashMap<Integer, GameWindow> gameWindows = new HashMap<Integer, GameWindow>();
+	Map<String, ChatWithUserWindow> chatWindows = new HashMap<String, ChatWithUserWindow>();
+	Map<Integer, GameWindow> gameWindows = new ConcurrentHashMap<Integer, GameWindow>();
 
 	/** Konstruktor klasy TableAndUserWindow */
 	public TableAndUserWindow(AppLogic appLogic) {
@@ -172,25 +175,20 @@ public class TableAndUserWindow extends JFrame {
 		});
 
 		usersList.addMouseListener(new MouseListener() {
-
 			@Override
 			public void mouseReleased(MouseEvent arg0) {
-
 			}
 
 			@Override
 			public void mousePressed(MouseEvent arg0) {
-
 			}
 
 			@Override
 			public void mouseExited(MouseEvent arg0) {
-
 			}
 
 			@Override
 			public void mouseEntered(MouseEvent arg0) {
-
 			}
 
 			@Override
@@ -254,6 +252,7 @@ public class TableAndUserWindow extends JFrame {
 				synchronized (this) {
 					appLogic.getGameRoomData().getTables().addTables(tables);
 					tablesListModel.fireTableDataChanged();
+					updateGameWindows();
 				}
 			}
 
@@ -263,6 +262,7 @@ public class TableAndUserWindow extends JFrame {
 					appLogic.getGameRoomData().getTables()
 							.addUpdateTable(table);
 					tablesListModel.fireTableDataChanged();
+					updateGameWindows();
 				}
 			}
 
@@ -271,6 +271,7 @@ public class TableAndUserWindow extends JFrame {
 				synchronized (this) {
 					appLogic.getGameRoomData().getTables().deleteTable(number);
 					tablesListModel.fireTableDataChanged();
+					updateGameWindows();
 				}
 			}
 
@@ -312,6 +313,28 @@ public class TableAndUserWindow extends JFrame {
 			public void gameMoves(int tableNo, List<Move> moves) {
 				gameWindows.get(tableNo).setMoves(moves);
 			}
+
+			@Override
+			public void messageAtTable(int tableNo, String message) {
+				gameWindows.get(tableNo).addToChat(message);
+			}
+
+			@Override
+			public void gameStats1(int tableNo, ChairsOnTable chairsOnTable) {
+				ChairsOnTable ch = gameWindows.get(tableNo).chairsOnTable;
+				ch.setGameInProgress(chairsOnTable.isGameInProgress());
+				ch.setPoints(chairsOnTable.getPoints());
+				ch.setTime(chairsOnTable.getTime());
+				ch.setActivePlayerIndex(chairsOnTable.getActivePlayerIndex());
+				gameWindows.get(tableNo).updateWindow();
+
+			}
+
+			@Override
+			public void gameMove(int tableNo, Move move) {
+				gameWindows.get(tableNo).addMove(move);
+			}
+
 		});
 	}
 
@@ -320,7 +343,13 @@ public class TableAndUserWindow extends JFrame {
 		synchronized (this) {
 			appLogic.getGameRoomData().getTables().addUpdateTable(t);
 			tablesListModel.fireTableDataChanged();
+			updateGameWindows();
 		}
+	}
+
+	public void updateGameWindows() {
+		for (GameWindow g : gameWindows.values())
+			g.updateWindow();
 	}
 }
 

@@ -45,4 +45,8 @@ public class Tables {
 
 		}
 	}
+
+	public Table getTable(int number) {
+		return map.get(number);
+	}
 }

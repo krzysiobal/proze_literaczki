@@ -14,6 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.JOptionPane;
 
+import Containers.ChairsOnTable;
 import Containers.Move;
 import Containers.MoveTile;
 import Containers.Packet;
@@ -33,8 +34,8 @@ import UserInterface.AppLogic;
 
 /** Klasa odpowiedzialna za połączenie z serwerem */
 public class Connection {
-	boolean debug = false;
-	boolean showAllPackets = true;
+	boolean debug = true;
+	boolean showAllPackets = false;
 
 	AppLogic appLogic;
 	Socket clientSocket;
@@ -324,6 +325,40 @@ public class Connection {
 				break;
 			}
 
+			case 0x51: { // message at table;
+				int tableNo = packet.getNumbers()[1];
+				String message = packet.getStrings()[0];
+				for (EventListener l : listeners)
+					if (l instanceof GameWindowListener)
+						((GameWindowListener) l).messageAtTable(tableNo,
+								message);
+				break;
+			}
+
+			// punkty graczy po wejsciu na stol
+			// 0x005a, 0x0065, 0x0007, 0x0001, 0x0008, 0x0001, 0x060f, 0xffff,
+			// 0x0005, 0x017a, 0x0003, 0x0001, 0x0002, 0x0003, 0x0128, 0x01c2,
+			// 0x0001, 0x0086, 0x0136, 0x0001,
+
+			case 0x5a: {
+				if (packet.getNumbers()[2] == 7) {
+					int tableNo = packet.getNumbers()[1];
+					ChairsOnTable ch = new ChairsOnTable();
+					ch.setGameInProgress(packet.getNumbers()[3] != 0xFFFF);
+					ch.setActivePlayerIndex(packet.getNumbers()[3]);
+
+					ch.setPoints(new int[] { packet.getNumbers()[14],
+							packet.getNumbers()[17] });
+					ch.setTime(new int[] { packet.getNumbers()[15],
+							packet.getNumbers()[18] });
+
+					for (EventListener l : listeners)
+						if (l instanceof GameWindowListener)
+							((GameWindowListener) l).gameStats1(tableNo, ch);
+				}
+				break;
+			}
+
 			case 0x5b: {
 				int tableNo = packet.getNumbers()[1];
 				List<Move> moves = new LinkedList<Move>();
@@ -354,6 +389,34 @@ public class Connection {
 				for (EventListener l : listeners)
 					if (l instanceof GameWindowListener)
 						((GameWindowListener) l).gameMoves(tableNo, moves);
+				break;
+			}
+
+			case 0x5c: { // ruch
+				if (packet.getStrings().length != 0)
+					break;
+				// ruch migajacy z prosbka o akceptacje
+				System.out.println(packet);
+				int tableNo = packet.getNumbers()[1];
+
+				int in = 2;
+				// int is = 0;
+				Move m = new Move();
+				while (in < packet.getNumbers().length) {
+					MoveTile mt = new MoveTile();
+					int x = packet.getNumbers()[in] / 128 % 16;
+					int y = packet.getNumbers()[in] / 2048 % 16;
+					int l = packet.getNumbers()[in] % 128;
+					mt.setX(x);
+					mt.setY(y);
+					mt.setLetter(l);
+					m.getTiles().add(mt);
+					in++;
+				}
+
+				for (EventListener l : listeners)
+					if (l instanceof GameWindowListener)
+						((GameWindowListener) l).gameMove(tableNo, m);
 				break;
 			}
 
@@ -535,6 +598,16 @@ public class Connection {
 
 	public void leavetable(int tableNumber) {
 		sendPacket(new int[] { 0x0049, tableNumber }, new String[] {});
+	}
+
+	public void sendMessageAtTable(int tableNo, String message) {
+		sendPacket(new int[] { 0x51, tableNo }, new String[] { message });
+	}
+
+	public void takePlaceAtTable(int tableNo, int placeNo) {
+		// sendPacket(new int[] { 0x54, tableNo, placeNo }, new String[] {}); -
+		// wstanie ze stolu
+		sendPacket(new int[] { 0x53, tableNo, placeNo }, new String[] {});
 	}
 
 	public void addListener(EventListener l) {
