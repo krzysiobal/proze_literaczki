@@ -23,6 +23,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 
 import Containers.ChairsOnTable;
 import Containers.Move;
@@ -38,21 +39,46 @@ import Models.UsersListTableModel;
 /** Klasa wyświetlająca okno z listą stołów i użytkowników */
 @SuppressWarnings("serial")
 public class TableAndUserWindow extends JFrame {
+	/** logika aplikacji */
 	private AppLogic appLogic;
+
+	/** combo z lista pokoi */
 	private JComboBox roomsListCombo;
+
+	/** panel glowny */
 	private JPanel mainPanel;
+
+	/** panel ze stolami i uzytkownikami */
 	private JPanel tablesUsersPanel;
-	private JPanel listsPanel;
+
+	/** panel ze stolami */
 	private JTable tablesList;
+
+	/** panel z uzytkownikami */
 	private JTable usersList;
+
+	/** model listy stolow */
 	private TablesListTableModel tablesListModel;
+
+	/** model listy uzytkownikow */
 	private UsersListTableModel usersListModel;
+
+	/** menu na gorze */
 	private JMenuBar menuBar;
+
+	/** aby liste uzytkownikow dalo sie przesuwac */
 	private JScrollPane usersScrollPane;
+
+	/** aby liste stolow dalo sie przesuwac */
 	private JScrollPane tablesScrollPane;
+
+	/** pasek statusu na dole */
 	private StatusBar statusBar;
 
+	/** wszystkie otwarte okna z rozmowami prywatnymi */
 	Map<String, ChatWithUserWindow> chatWindows = new HashMap<String, ChatWithUserWindow>();
+
+	/** wszystkie otwarte okna ze stolami */
 	Map<Integer, GameWindow> gameWindows = new ConcurrentHashMap<Integer, GameWindow>();
 
 	/** Konstruktor klasy TableAndUserWindow */
@@ -83,6 +109,7 @@ public class TableAndUserWindow extends JFrame {
 		usersListModel = new UsersListTableModel(appLogic.getGameRoomData()
 				.getUsers());
 		usersList = new JTable(usersListModel);
+		usersList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		usersScrollPane.getViewport().add(usersList);
 		usersScrollPane.setPreferredSize(new Dimension(300, 300));
 
@@ -91,11 +118,11 @@ public class TableAndUserWindow extends JFrame {
 		tablesListModel = new TablesListTableModel(appLogic.getGameRoomData()
 				.getTables());
 		tablesList = new JTable(tablesListModel);
+		tablesList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		tablesScrollPane.getViewport().add(tablesList);
 		tablesScrollPane.setPreferredSize(new Dimension(400, 300));
 
 		mainPanel = new JPanel();
-		listsPanel = new JPanel();
 
 		menuBar = new JMenuBar();
 		statusBar = new StatusBar();
@@ -169,6 +196,8 @@ public class TableAndUserWindow extends JFrame {
 			public void mouseClicked(MouseEvent arg0) {
 				JTable target = (JTable) arg0.getSource();
 				int row = target.getSelectedRow();
+				if (row < 0)
+					return;
 				int tableNo = tablesListModel.getTable(row).getNumber();
 				appLogic.getConnection().enterTable(tableNo);
 			}
@@ -195,6 +224,8 @@ public class TableAndUserWindow extends JFrame {
 			public void mouseClicked(MouseEvent e) {
 				JTable target = (JTable) e.getSource();
 				int row = target.getSelectedRow();
+				if (row < 0)
+					return;
 				String userName = usersListModel.getUser(row).getUsername();
 
 				if (!chatWindows.containsKey(userName))

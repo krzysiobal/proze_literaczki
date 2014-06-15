@@ -7,34 +7,44 @@ import javax.swing.table.AbstractTableModel;
 import Containers.User;
 import Containers.Users;
 
+/** klasa uzywana przy wyswietlaniu listy uzytkownikow */
 @SuppressWarnings("serial")
 public class UsersListTableModel extends AbstractTableModel {
+	/** kolumny na liscie */
 	private String[] columnNames = { "Username", "Rank", "At table" };
+
+	/** dane o uzytkownikach */
 	List<User> users;
 
+	/** konstruktor */
 	public UsersListTableModel(Users users) {
 		this.users = users.getList();
 	}
 
+	/** zwraca kolumne o podanym indeksie */
 	@Override
 	public String getColumnName(int columnIndex) {
 		return columnNames[columnIndex];
 	}
 
+	/** zwraca ilosc wierszy */
 	@Override
 	public int getRowCount() {
 		return users.size();
 	}
 
+	/** zwraca ilosc kolumn */
 	@Override
 	public int getColumnCount() {
 		return columnNames.length;
 	}
 
+	/** zwraca uzytkownika w danym wierszu */
 	public User getUser(int rowIndex) {
 		return users.get(rowIndex);
 	}
 
+	/** zwraca wartosc komorki */
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		User u = users.get(rowIndex);
@@ -52,6 +62,7 @@ public class UsersListTableModel extends AbstractTableModel {
 		}
 	}
 
+	/** zwraca typ klasy przechowywanej w danej kolumnie */
 	@Override
 	public Class<?> getColumnClass(int columnIndex) {
 		switch (columnIndex) {
@@ -66,6 +77,7 @@ public class UsersListTableModel extends AbstractTableModel {
 		}
 	}
 
+	/** czy komorke mozne edytowac */
 	@Override
 	public boolean isCellEditable(int row, int column) {
 		return false;

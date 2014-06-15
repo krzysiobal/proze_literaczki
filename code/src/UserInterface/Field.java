@@ -5,6 +5,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 
 import javax.swing.JButton;
+import javax.swing.border.LineBorder;
 
 /**
  * Klasa reprezentująca pole, dziedzicząca po JButton. Domyślnie granice
@@ -31,7 +32,7 @@ public class Field extends JButton {
 		setPreferredSize(new Dimension(30, 30));
 		setFont(new Font("Droid Sans Mono", Font.BOLD, 24));
 		setBackground(color);
-		setBorder(null);
+		setBorder(new LineBorder(new Color(192, 192, 192), 1));
 		setEnabled(false);
 	}
 

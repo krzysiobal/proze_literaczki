@@ -89,6 +89,7 @@ public class ChatWithUserWindow extends JFrame {
 		setResizable(false);
 	}
 
+	/** dodaje do listy wyswietlanych wiadomosci podana wiadomosc */
 	public void addToChat(String message) {
 		chatHistory.setText(chatHistory.getText() + message + "\r\n");
 

@@ -4,11 +4,22 @@ import java.util.Properties;
 
 /** Przechowuje informacje o jednym ze stołów */
 public class Table {
+	/** numer stolu */
 	private int number;
+
+	/** ustawienia stolu */
 	private Properties tableProperties;
+
+	/** czas gry na stole */
 	private String gameTime;
+
+	/** czy gra na stole rankingowa */
 	private boolean isRanked;
+
+	/** dostepnosc rankingowa stolu */
 	private TableAvailability tableAvailability;
+
+	/** uzytkownicy na stole */
 	private String[] usersAtTable;
 
 	/** Dla jakich użytkowników stół jest dostępny */

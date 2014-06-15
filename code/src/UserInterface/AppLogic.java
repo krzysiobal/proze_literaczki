@@ -4,16 +4,24 @@ import Containers.GameRoomData;
 import Main.Connection;
 import Utilities.ConfigFile;
 
-/** Logika aplikacji */
+/**
+ * Logika aplikacji zawierajaca wszystkie dane o stanie gry, do ktorej maja
+ * dostep wszystkie klasy interfejsu graficznego
+ */
 public class AppLogic {
-	/** zmienna przechowywująca nazwę użytkownika */
+	/** twoja nazwa użytkownika */
 	private String username;
 
-	/** zmienna przechowywująca hasło użytkownika */
+	/** twoje haslo */
 	private String password;
 
+	/** dane o stolach, uztywkonikach */
 	private GameRoomData gameRoomData;
+
+	/** polaczenie do serwera */
 	private Connection connection;
+
+	/** plik konfiguracyjny */
 	private ConfigFile configFile;
 
 	/** konstruktor klasy */
@@ -48,20 +56,23 @@ public class AppLogic {
 		this.connection = connection;
 	}
 
+	/** zwraca twoja nazwe uzytkownika */
 	public String getUsername() {
 		return username;
 	}
 
+	/** ustawia twoja nazwe uzytkownika */
 	public void setUsername(String username) {
 		this.username = username;
 	}
 
+	/** zwraca twoje haslo */
 	public String getPassword() {
 		return password;
 	}
 
+	/** ustawia twoje haslo */
 	public void setPassword(String password) {
 		this.password = password;
 	}
-
 }

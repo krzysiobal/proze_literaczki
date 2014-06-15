@@ -34,21 +34,38 @@ import UserInterface.AppLogic;
 
 /** Klasa odpowiedzialna za połączenie z serwerem */
 public class Connection {
-	boolean debug = true;
+	/** czy wyswietlac informacje o nieznanych pakietach */
+	boolean debug = false;
+
+	/**
+	 * czy wyswietlac informacje o wszystkich pakietach odbieranych i wysylanych
+	 */
 	boolean showAllPackets = false;
 
+	/** logika aplikacji */
 	AppLogic appLogic;
+
+	/** gniazdo polaczenia z serwerem */
 	Socket clientSocket;
+
+	/** strumien wyjscia do serwera */
 	DataOutputStream outToServer;
+
+	/** strumien wejscia od serwera */
 	DataInputStream inFromServer;
+
+	/** identyfikator sesji po zalogowainu/rejestracji */
 	String ksession;
 
+	/** wszyscy zarejestrowani sluchacze */
 	List<EventListener> listeners = new CopyOnWriteArrayList<EventListener>();
 
+	/** konstruktor */
 	public Connection(AppLogic appLogic) {
 		this.appLogic = appLogic;
 	}
 
+	/** rejestruje uzytkownika o podanym nicku i hasle */
 	public void registerUsername(String username, String password)
 			throws RegisterUsernameExceptionConnectionProblem,
 			RegisterUsernameExceptionUserAlreadyExists {
@@ -104,6 +121,7 @@ public class Connection {
 		throw new RegisterUsernameExceptionUserAlreadyExists();
 	}
 
+	/** loguje sie na uzytkownika o podanym nicku i hasle */
 	public void login(String username, String password)
 			throws LoginFailExceptionInvalidCredentials,
 			LoginFailExceptionConnectionProblem {
@@ -161,6 +179,7 @@ public class Connection {
 		throw new LoginFailExceptionInvalidCredentials();
 	}
 
+	/** wykonuje odpowiednie dzialania po przyjsciu danego pakietu */
 	private void interpretPacket(Packet packet) {
 		if (showAllPackets) {
 			System.out.println("ODBIERAM " + packet.toString());
@@ -396,7 +415,7 @@ public class Connection {
 				if (packet.getStrings().length != 0)
 					break;
 				// ruch migajacy z prosbka o akceptacje
-				System.out.println(packet);
+				// System.out.println(packet);
 				int tableNo = packet.getNumbers()[1];
 
 				int in = 2;
@@ -496,6 +515,7 @@ public class Connection {
 				(byte) ((i >> 0) & 0xFF) });
 	}
 
+	/** odbiera od serwera liczbe 32 bitowa */
 	private int receiveInt32() throws IOException {
 		byte[] array = new byte[4];
 		inFromServer.readFully(array, 0, array.length);
@@ -503,6 +523,7 @@ public class Connection {
 				| ((array[2] & 0xFF) << 8) | ((array[3] & 0xFF) << 0);
 	}
 
+	/** odbiera od serwera liczbe 16 bitowa */
 	private int receiveInt16() throws IOException {
 		byte[] array = new byte[2];
 		inFromServer.readFully(array, 0, array.length);
@@ -546,6 +567,7 @@ public class Connection {
 		}
 	}
 
+	/** odbiera pakiet od serwera */
 	private Packet receivePacket() {
 		try {
 			int numbers[];
@@ -580,36 +602,44 @@ public class Connection {
 		return null;
 	}
 
+	/** dolacza do stolu o podanej pelnej nazwie */
 	public void joinRoom(String roomName) {
 		sendPacket(new int[] { 0x14 }, new String[] { "/join " + roomName });
 	}
 
+	/** wysyla prywatna wiadomosc do danego uzytkownika */
 	public void sendPrivateChatMessage(String toUser, String message) {
 		sendPacket(new int[] { 0x15 }, new String[] { toUser, message });
 	}
 
+	/** potwierdza odebranie prywatnej wiadomosci od danego uzytkownika */
 	public void acknowledgePrivateChatMessages(String toUser) {
 		sendPacket(new int[] { 0x19, 0x11 }, new String[] { toUser });
 	}
 
+	/** wchodzi na stol o podanym numerze */
 	public void enterTable(int tableNumber) {
 		sendPacket(new int[] { 0x0048, tableNumber }, new String[] {});
 	}
 
+	/** opuszcza stol o podanym numerze */
 	public void leavetable(int tableNumber) {
 		sendPacket(new int[] { 0x0049, tableNumber }, new String[] {});
 	}
 
+	/** wysyla wiadomosc na stole o podanym numerze */
 	public void sendMessageAtTable(int tableNo, String message) {
 		sendPacket(new int[] { 0x51, tableNo }, new String[] { message });
 	}
 
+	/** zajmuje miejsce na stole */
 	public void takePlaceAtTable(int tableNo, int placeNo) {
 		// sendPacket(new int[] { 0x54, tableNo, placeNo }, new String[] {}); -
 		// wstanie ze stolu
 		sendPacket(new int[] { 0x53, tableNo, placeNo }, new String[] {});
 	}
 
+	/** dodaje sluchacza */
 	public void addListener(EventListener l) {
 		listeners.add(l);
 	}

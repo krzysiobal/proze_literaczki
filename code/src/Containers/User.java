@@ -2,9 +2,16 @@ package Containers;
 
 /** Klasa przechowująca dane o użytkowinku */
 public class User {
+	/** nick */
 	private String username;
+
+	/** pozycja rankingowa */
 	private int rankingPosition;
+
+	/** numer stol una ktorym przebywa */
 	private int tableAt;
+
+	/** narodowosc */
 	private String nationality;
 
 	/** Konstruktor klasy */

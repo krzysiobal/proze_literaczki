@@ -3,7 +3,6 @@ package UserInterface;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -12,7 +11,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -44,6 +42,7 @@ import Utilities.Colors;
 /** Klasa wyświetaląca okno ze stołu z trwającą grą */
 @SuppressWarnings("serial")
 public class GameWindow extends JFrame {
+	/** logika aplikacji */
 	AppLogic appLogic;
 
 	/** miejsca na stole */
@@ -61,12 +60,19 @@ public class GameWindow extends JFrame {
 	/** tekst od innych graczy na stole **/
 	JTextArea chatHistory;
 
+	/** obrazek z graczami przy stole */
 	JLabel playersImage;
+
+	/** panel z informacjami o graczach bioracych udzial w grze */
 	UserPanelInfo player1info, player2info;
 
 	/** Zmienna przechowywująca polski alfabet. Z niej będa losowane literki. */
 	private String[] letters;
+
+	/** ile jest liter w powyzszym alfabecie */
 	private int[] lettersCount;
+
+	/** ile jest punktow za kazda litere */
 	private int[] lettersPoints;
 
 	/** Zmienna określająca kolory pól na planszy */
@@ -77,11 +83,12 @@ public class GameWindow extends JFrame {
 	Field[][] fields = new Field[15][15];
 
 	/** panele przechowujące pola z literami gracza **/
-	Field[] fieldsYourLetters = new Field[7];
+	DraggableField[] fieldsYourLetters = new DraggableField[7];
 
 	/** panele przechowujące pola z literami na wymianę **/
 	Field[] fieldsLettersToChange = new Field[7];
 
+	/** numer stolu */
 	int tableNo;
 
 	/** Konstruktor okna, wczytuje plik konfiguracyjny */
@@ -184,6 +191,13 @@ public class GameWindow extends JFrame {
 
 		gameLetters[0] = new GameLetter();
 		gameLetters[0].setLetter(2);
+
+		gameLetters[1] = new GameLetter();
+		gameLetters[1].setLetter(3);
+
+		gameLetters[3] = new GameLetter();
+		gameLetters[3].setLetter(4);
+
 		displayYourLetters();
 		updateWindow();
 
@@ -273,7 +287,6 @@ public class GameWindow extends JFrame {
 
 				final Field f = new Field(fieldBackColor, fieldLabel);
 				fields[i][j] = f;
-				f.setBorder(new LineBorder(new Color(192, 192, 192), 1));
 
 				// reagowanie na klikniecie pola, na razie nie dziala
 				f.addMouseListener(new MouseListener() {
@@ -311,23 +324,25 @@ public class GameWindow extends JFrame {
 
 		// pasek odstepu
 		for (int j = 0; j < 15; j++) {
-			fieldsPanel.add(new Field(new Color(0, 0, 0, 0), ""));
+			Field f = new Field(new Color(0, 0, 0, 0), "");
+			f.setBorder(null);
+			fieldsPanel.add(f);
 		}
 
 		// litery gracza
 		for (int j = 0; j < 7; j++) {
-			final Field f = new Field(Color.WHITE, "");
-			f.setBorder(new LineBorder(new Color(192, 192, 192), 1));
+			final DraggableField f = new DraggableField(Color.WHITE, "", this);
 			fieldsPanel.add(f);
 			fieldsYourLetters[j] = f;
 		}
 
-		fieldsPanel.add(new Field(new Color(0, 0, 0, 0), ""));
+		Field f2 = new Field(new Color(0, 0, 0, 0), "");
+		f2.setBorder(null);
+		fieldsPanel.add(f2);
 
 		// miejsca na wymiane
 		for (int j = 0; j < 7; j++) {
 			final Field f = new Field(new Color(0, 0, 0, 90), "");
-			f.setBorder(new LineBorder(new Color(192, 192, 192), 1));
 			fieldsPanel.add(f);
 			fieldsLettersToChange[j] = f;
 		}
@@ -349,6 +364,7 @@ public class GameWindow extends JFrame {
 		}
 	}
 
+	/** dodaje podany ruch do listy ruchow */
 	private void addMoveinternal(Move m) {
 		for (MoveTile mt : m.getTiles()) {
 			boolean onBlank = mt.getLetter() >= 64;
@@ -367,6 +383,7 @@ public class GameWindow extends JFrame {
 		}
 	}
 
+	/** dodaje podany ruch do listy ruchow */
 	public void addMove(final Move move) {
 		EventQueue.invokeLater(new Runnable() {
 			@Override
@@ -376,6 +393,7 @@ public class GameWindow extends JFrame {
 		});
 	}
 
+	/** ustawia liste ruchow */
 	public void setMoves(final List<Move> moves) {
 		EventQueue.invokeLater(new Runnable() {
 			@Override
@@ -387,6 +405,7 @@ public class GameWindow extends JFrame {
 		});
 	}
 
+	/** dodaje podana wiadomosc do listy wiadomosci wyswietlanych przy stole */
 	public void addToChat(String message) {
 		chatHistory.setText(chatHistory.getText() + message + "\r\n");
 
@@ -394,12 +413,13 @@ public class GameWindow extends JFrame {
 		chatHistory.setCaretPosition(chatHistory.getDocument().getLength());
 	}
 
+	/** aktualizuje informacje o twoich literach */
 	void displayYourLetters() {
 		EventQueue.invokeLater(new Runnable() {
 			@Override
 			public void run() {
 				for (int j = 0; j < 7; ++j) {
-					final Field f = fieldsYourLetters[j];
+					final DraggableField f = fieldsYourLetters[j];
 					if (gameLetters[j] == null) {
 						f.setBackground(Color.WHITE);
 						f.setText("");
@@ -414,23 +434,6 @@ public class GameWindow extends JFrame {
 						f.setBorder(new LineBorder(
 								Colors.getLetterTileBorderColor(lettersPoints[gameLetters[j]
 										.getLetter()]), 2));
-						f.setLayout(new FlowLayout());
-						// f.setComponentZOrder(f, 2);
-
-						f.addMouseMotionListener(new MouseMotionListener() {
-
-							@Override
-							public void mouseMoved(MouseEvent e) {
-							}
-
-							@Override
-							public void mouseDragged(MouseEvent e) {
-
-								f.setBounds(e.getX(), e.getY(), f.getWidth(),
-										f.getHeight());
-							}
-						});
-
 					}
 				}
 				repaint();
@@ -438,6 +441,7 @@ public class GameWindow extends JFrame {
 		});
 	}
 
+	/** odswieza okno */
 	public void updateWindow() {
 		String p1 = "", p2 = "";
 		if (appLogic.getGameRoomData().getTables().getTable(tableNo) != null
@@ -450,7 +454,6 @@ public class GameWindow extends JFrame {
 		}
 		chairsOnTable.getPlayerNames()[0] = p1;
 		chairsOnTable.getPlayerNames()[1] = p2;
-
 		EventQueue.invokeLater(new Runnable() {
 			@Override
 			public void run() {
@@ -461,6 +464,7 @@ public class GameWindow extends JFrame {
 	}
 }
 
+/** klasa przechowujaca informacje o literze z twojego stojaka */
 class GameLetter {
 	int letter;
 
@@ -473,13 +477,31 @@ class GameLetter {
 	}
 }
 
+/** panel z danymi o graczu bioracym udzial w grze */
 @SuppressWarnings("serial")
 class UserPanelInfo extends JPanel {
+	/** okno gry */
 	GameWindow gw;
-	ChairsOnTable chairsOnTable;
-	int index;
-	UserPanelInfoField nameField, pointsField, timeField, lettersLeftField;
 
+	/** dane o stolach */
+	ChairsOnTable chairsOnTable;
+
+	/** indeks gracza dla ktorego jest ten panel */
+	int index;
+
+	/** pole z nazwa gracza */
+	UserPanelInfoField nameField;
+
+	/** pole z punktami gracza */
+	UserPanelInfoField pointsField;
+
+	/** pole z czasem do zakonczenia gry */
+	UserPanelInfoField timeField;
+
+	/** pole z iloscia posiadanych liter */
+	UserPanelInfoField lettersLeftField;
+
+	/** konstruktor */
 	public UserPanelInfo(GameWindow gw, ChairsOnTable chairsOnTable, int index) {
 		super();
 		this.gw = gw;
@@ -502,6 +524,7 @@ class UserPanelInfo extends JPanel {
 		add(lettersLeftField);
 	}
 
+	/** aktualizuj panel */
 	public void update() {
 		if (chairsOnTable.getActivePlayerIndex() == index)
 			setBorder(new LineBorder(new Color(192, 192, 192), 2));
@@ -536,9 +559,10 @@ class UserPanelInfo extends JPanel {
 	}
 }
 
-/** Klasa reprezentująca pole z nazwą użytkownika oraz punktami */
+/** Klasa reprezentująca pole wchodzace w sklad panelu z informacjami o graczu */
 @SuppressWarnings("serial")
 class UserPanelInfoField extends JButton {
+	/** co ma sie stac po kliknieciu */
 	ActionListener al;
 
 	/**
@@ -553,15 +577,18 @@ class UserPanelInfoField extends JButton {
 		setEnabled(false);
 	}
 
+	/**
+	 * pozwol aby przycisk dalo sie kliknac i wykonaj podana akcje po kliknieciu
+	 */
 	public void setClickable(ActionListener al) {
 		this.al = al;
 		addActionListener(al);
 		setEnabled(true);
 	}
 
+	/** nie pozwol na klikniecie przycisku */
 	public void setNonClickable() {
 		removeActionListener(al);
-		;
 		setEnabled(false);
 	}
 }
