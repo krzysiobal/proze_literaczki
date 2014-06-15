@@ -1,5 +1,6 @@
 package Containers;
 
+/** reprezentuje kafelek z literką **/
 public class MoveTile {
 	int x;
 	int y;

@@ -62,22 +62,18 @@ public class ChatWithUserWindow extends JFrame {
 		final Connection con = appLogic.getConnection();
 		final String un = username;
 		chatMessageToSend.addKeyListener(new KeyListener() {
-
 			@Override
 			public void keyTyped(KeyEvent arg0) {
-				// TODO Auto-generated method stub
-
 			}
 
 			@Override
 			public void keyReleased(KeyEvent arg0) {
-				// TODO Auto-generated method stub
-
 			}
 
 			@Override
 			public void keyPressed(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER
+						&& chatMessageToSend.getText().length() > 0) {
 					con.sendPrivateChatMessage(un, chatMessageToSend.getText());
 					chatMessageToSend.setText("");
 					e.consume();
@@ -95,5 +91,8 @@ public class ChatWithUserWindow extends JFrame {
 
 	public void addToChat(String message) {
 		chatHistory.setText(chatHistory.getText() + message + "\r\n");
+
+		// scroll it to bottom
+		chatHistory.setCaretPosition(chatHistory.getDocument().getLength());
 	}
 }
