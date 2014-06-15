@@ -12,7 +12,7 @@ public class Main {
 		final AppLogic appLogic = new AppLogic();
 		try {
 			appLogic.getConfigFile().parse(
-					"e:\\Pulpit\\proze-literaczki\\repo\\code\\settings.ini");
+					"settings.ini");
 
 		} catch (ConfigFileParseException ex) {
 			System.out.println(ex.getMessage());
