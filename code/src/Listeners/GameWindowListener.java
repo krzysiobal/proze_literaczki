@@ -25,4 +25,7 @@ public interface GameWindowListener extends EventListener {
 
 	/** przyszedl kolejny ruch od uzytkownika */
 	public void gameMove(int tableNo, Move move);
+
+	/** gra na stole sie rozpoczela */
+	public void gameStarted(int tableNo);
 }

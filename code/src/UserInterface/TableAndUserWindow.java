@@ -3,7 +3,6 @@ package UserInterface;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.EventQueue;
-import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -22,6 +21,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -140,6 +140,11 @@ public class TableAndUserWindow extends JFrame {
 		menuBar.add(menuGame);
 		menuBar.add(menuHelp);
 
+		JMenuItem helpItem = new JMenuItem("Help me");
+		JMenuItem aboutItem = new JMenuItem("About");
+		menuHelp.add(helpItem);
+		menuHelp.add(aboutItem);
+
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 		mainPanel.setLayout(new BorderLayout());
 		mainPanel.add(roomsListCombo, BorderLayout.NORTH);
@@ -158,7 +163,6 @@ public class TableAndUserWindow extends JFrame {
 		pack();
 
 		exitGameItem.addActionListener(new ActionListener() {
-
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				System.exit(0);
@@ -168,9 +172,31 @@ public class TableAndUserWindow extends JFrame {
 		createTableItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				GameWindow win = new GameWindow(appLogic, 0);
-				win.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-				win.setVisible(true);
+				appLogic.getConnection().createTable();
+			}
+		});
+
+		settingsItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				JOptionPane.showMessageDialog(null,
+						"Currently there are no options to set.");
+			}
+		});
+
+		helpItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				JOptionPane.showMessageDialog(null,
+						"Please view UsersManual.pdf for any help.");
+			}
+		});
+
+		aboutItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				JOptionPane.showMessageDialog(null,
+						"Literaki v1.0\n\n (C) 2014, J.Jozwiak & K.Balazyk");
 			}
 		});
 
@@ -367,6 +393,13 @@ public class TableAndUserWindow extends JFrame {
 			@Override
 			public void gameMove(int tableNo, Move move) {
 				gameWindows.get(tableNo).addMove(move);
+			}
+
+			@Override
+			public void gameStarted(int tableNo) {
+				// gameWindows.get(tableNo).loadFields();
+				// gameWindows.get(tableNo).updateWindow();
+
 			}
 
 		});

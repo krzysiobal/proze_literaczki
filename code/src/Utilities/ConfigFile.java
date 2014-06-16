@@ -1,7 +1,8 @@
 package Utilities;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,15 +15,17 @@ import Exceptions.ConfigFileParseException;
  * nazwy parametrów)
  */
 public class ConfigFile {
+	/** wczytany plik do haszmapy */
 	HashMap<String, HashMap<String, String>> file = new HashMap<String, HashMap<String, String>>();
 
+	/** wzorzec uzywany do parsowania nazw sekcji */
 	Pattern sectionNamePattern = Pattern.compile("^\\[([a-zA-Z0-9\\._]+)\\]$");
+
+	/** wzorzec uzywany do parsowania pary klucz=wartosc */
 	Pattern nameValuePattern = Pattern
 			.compile("^([a-zA-Z0-9\\._]+)\\s*=\\s*([a-zA-ZŻÓŁĆĘŚĄŹŃżółćęśąźń0-9\\.\\,_]+)$");
 
-	/*
-	 * returns value of given key in section
-	 */
+	/** zwraca wartosc z podanej sekcji dla podanego klucza */
 	public String getValue(String sectionName, String keyName) {
 		if (!file.containsKey(sectionName))
 			System.out.println("Brak klucza: " + sectionName);
@@ -30,11 +33,12 @@ public class ConfigFile {
 		return file.get(sectionName).get(keyName);
 	}
 
-	// opens and parses the given filename
+	/** parsuje podany plik */
 	public void parse(String fileName) throws ConfigFileParseException {
 
 		try {
-			BufferedReader r = new BufferedReader(new FileReader(fileName));
+			BufferedReader r = new BufferedReader(new InputStreamReader(
+					new FileInputStream(fileName), "UTF8"));
 			String line;
 			String currentSection = "";
 			Matcher m;
@@ -61,6 +65,7 @@ public class ConfigFile {
 					continue;
 				}
 				r.close();
+
 				throw new ConfigFileParseException("Blad parsowania linijki: "
 						+ line);
 

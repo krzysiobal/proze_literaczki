@@ -35,12 +35,12 @@ import UserInterface.AppLogic;
 /** Klasa odpowiedzialna za połączenie z serwerem */
 public class Connection {
 	/** czy wyswietlac informacje o nieznanych pakietach */
-	boolean debug = false;
+	boolean showUnknownPackets = false;
 
 	/**
 	 * czy wyswietlac informacje o wszystkich pakietach odbieranych i wysylanych
 	 */
-	boolean showAllPackets = false;
+	boolean showAllPackets = true;
 
 	/** logika aplikacji */
 	AppLogic appLogic;
@@ -374,6 +374,11 @@ public class Connection {
 					for (EventListener l : listeners)
 						if (l instanceof GameWindowListener)
 							((GameWindowListener) l).gameStats1(tableNo, ch);
+				} else if (packet.getNumbers()[2] == 4) {
+					int tableNo = packet.getNumbers()[1];
+					for (EventListener l : listeners)
+						if (l instanceof GameWindowListener)
+							((GameWindowListener) l).gameStarted(tableNo);
 				}
 				break;
 			}
@@ -450,7 +455,7 @@ public class Connection {
 				break;
 
 			default:
-				if (debug)
+				if (showUnknownPackets)
 					System.out.println(packet.toString());
 				// JOptionPane.showMessageDialog(null, "pakiet inny");
 			}
@@ -600,6 +605,11 @@ public class Connection {
 		} catch (Exception ex) {
 		}
 		return null;
+	}
+
+	/** tworzy nowy stol */
+	public void createTable() {
+		sendPacket(new int[] { 0x47 }, new String[] {});
 	}
 
 	/** dolacza do stolu o podanej pelnej nazwie */

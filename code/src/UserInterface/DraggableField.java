@@ -1,28 +1,31 @@
 package UserInterface;
 
 import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 /** literka z mozliwoscia prezciagania */
 @SuppressWarnings("serial")
 public class DraggableField extends Field implements MouseListener,
 		MouseMotionListener {
 	JFrame frame;
+	JPanel panel;
 	Point offset = new Point();
 	boolean dragging = false;
-	Point origLoc, newLoc;
-	Field f;
+	Point origLoc, newLoc = null;
+	JLabel label;
 
 	/** konstruktor */
-	public DraggableField(Color color, String text, JFrame frame) {
+	public DraggableField(Color color, String text, JFrame frame, JPanel panel) {
 		super(color, text);
 		this.frame = frame;
+		this.panel = panel;
 		origLoc = getLocation();
 		newLoc = getLocation();
 		addMouseListener(this);
@@ -36,27 +39,38 @@ public class DraggableField extends Field implements MouseListener,
 		newLoc = getLocation();
 		offset.x = e.getLocationOnScreen().x - getLocationOnScreen().x;
 		offset.y = e.getLocationOnScreen().y - getLocationOnScreen().y;
-		f = new Field(Color.RED, "bla");
-		frame.add(f);
-		f.setBounds(getBounds());
+
+		// panel.remove(this);
 		dragging = true;
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
-		// JLabel label = new JLabel(new ImageIcon(selectedImage));
-		// label.setBorder(BorderFactory.createEtchedBorder());
-		// mainPanel.add(label);
-		// Point p = SwingUtilities.convertPoint(df, r.x, r.y, frame);
-		// label.setBounds(p.x, p.y, r.width, r.height);
-		// mainPanel.repaint();
-		// df.setBounds(p.x, p.y, r.width, r.height);
-		dragging = false;
-	}
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				int steps = (int) (Math.sqrt((newLoc.x - origLoc.x)
+						* (newLoc.x - origLoc.x) + (newLoc.y - origLoc.y)
+						* (newLoc.y - origLoc.y)) / 4);
+				if (steps == 0)
+					steps = 1;
+				for (int i = steps; i >= 0; --i) {
+					int x = origLoc.x + ((newLoc.x - origLoc.x) * i / steps)
+							+ (int) (20 * Math.sin(2 * Math.PI * i / steps));
+					int y = origLoc.y + ((newLoc.y - origLoc.y) * i / steps)
+							+ (int) (20 * Math.sin(2 * Math.PI * i / steps));
 
-	@Override
-	protected void paintComponent(Graphics g) {
-		super.paintComponent(g);
+					setLocation(new Point(x, y));
+					try {
+						Thread.sleep(20);
+					} catch (Exception ex) {
+
+					}
+				}
+
+			}
+		}).start();
+		dragging = false;
 	}
 
 	@Override
@@ -65,7 +79,8 @@ public class DraggableField extends Field implements MouseListener,
 			newLoc = getLocation();
 			newLoc.x += e.getX() - offset.x;
 			newLoc.y += e.getY() - offset.y;
-			f.setLocation(newLoc);
+			setLocation(newLoc);
+
 		}
 	}
 

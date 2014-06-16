@@ -197,10 +197,21 @@ public class GameWindow extends JFrame {
 		gameLetters[1] = new GameLetter();
 		gameLetters[1].setLetter(3);
 
-		gameLetters[3] = new GameLetter();
-		gameLetters[3].setLetter(4);
+		gameLetters[2] = new GameLetter();
+		gameLetters[2].setLetter(4);
 
-		displayYourLetters();
+		gameLetters[3] = new GameLetter();
+		gameLetters[3].setLetter(5);
+
+		gameLetters[4] = new GameLetter();
+		gameLetters[4].setLetter(6);
+
+		gameLetters[5] = new GameLetter();
+		gameLetters[5].setLetter(7);
+
+		gameLetters[6] = new GameLetter();
+		gameLetters[6].setLetter(8);
+
 		updateWindow();
 
 		new Thread(new Runnable() {
@@ -333,7 +344,8 @@ public class GameWindow extends JFrame {
 
 		// litery gracza
 		for (int j = 0; j < 7; j++) {
-			final DraggableField f = new DraggableField(Color.WHITE, "", this);
+			final DraggableField f = new DraggableField(Color.WHITE, "", this,
+					fieldsPanel);
 			fieldsPanel.add(f);
 			fieldsYourLetters[j] = f;
 		}
@@ -415,34 +427,6 @@ public class GameWindow extends JFrame {
 		chatHistory.setCaretPosition(chatHistory.getDocument().getLength());
 	}
 
-	/** aktualizuje informacje o twoich literach */
-	void displayYourLetters() {
-		EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				for (int j = 0; j < 7; ++j) {
-					final DraggableField f = fieldsYourLetters[j];
-					if (gameLetters[j] == null) {
-						f.setBackground(Color.WHITE);
-						f.setText("");
-						f.setBorder(new LineBorder(new Color(192, 192, 192), 1));
-					} else {
-						f.setBackground(Colors
-								.getLetterTileColor(lettersPoints[gameLetters[j]
-										.getLetter()]));
-
-						f.setText(letters[gameLetters[j].getLetter()]);
-
-						f.setBorder(new LineBorder(
-								Colors.getLetterTileBorderColor(lettersPoints[gameLetters[j]
-										.getLetter()]), 2));
-					}
-				}
-				repaint();
-			}
-		});
-	}
-
 	/** odswieza okno */
 	public void updateWindow() {
 		String p1 = "", p2 = "";
@@ -461,6 +445,25 @@ public class GameWindow extends JFrame {
 			public void run() {
 				player1info.update();
 				player2info.update();
+
+				for (int j = 0; j < 7; ++j) {
+					final DraggableField f = fieldsYourLetters[j];
+					if (gameLetters[j] == null) {
+						f.setBackground(Color.WHITE);
+						f.setText("");
+						f.setBorder(new LineBorder(new Color(192, 192, 192), 1));
+					} else {
+						f.setBackground(Colors
+								.getLetterTileColor(lettersPoints[gameLetters[j]
+										.getLetter()]));
+
+						f.setText(letters[gameLetters[j].getLetter()]);
+
+						f.setBorder(new LineBorder(
+								Colors.getLetterTileBorderColor(lettersPoints[gameLetters[j]
+										.getLetter()]), 2));
+					}
+				}
 			}
 		});
 	}
